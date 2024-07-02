@@ -1,4 +1,4 @@
-package com.spzx;
+package com.spzx.product;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
