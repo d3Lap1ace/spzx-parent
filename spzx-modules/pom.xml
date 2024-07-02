@@ -13,6 +13,7 @@
         <module>spzx-gen</module>
         <module>spzx-job</module>
         <module>spzx-file</module>
+        <module>spzx-product</module>
     </modules>
 
     <artifactId>spzx-modules</artifactId>

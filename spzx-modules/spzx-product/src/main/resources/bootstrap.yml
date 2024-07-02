@@ -1,12 +1,12 @@
 # Tomcat
 server:
-  port: 9201
+  port: 9205
 
 # Spring
 spring:
   application:
     # 应用名称
-    name: spzx-system
+    name: spzx-product
   profiles:
     # 环境配置
     active: dev
