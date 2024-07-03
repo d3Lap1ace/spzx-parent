@@ -1,6 +1,7 @@
 package com.spzx.product.mapper;
 
 import com.spzx.product.domain.Brand;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Select;
 
@@ -18,7 +19,7 @@ import java.util.List;
 
 public interface BrandMapper {
 
-    List<Brand> selectBrandList();
+    List<Brand> selectBrandList(Brand brand);
 
 
     @Select("select * from brand where id = #{id}")
@@ -26,4 +27,11 @@ public interface BrandMapper {
 
 
     int insertBrand(Brand brand);
+
+    int updateBrand(Brand brand);
+
+
+    int deleteBrandById(Long id);
+
+
 }

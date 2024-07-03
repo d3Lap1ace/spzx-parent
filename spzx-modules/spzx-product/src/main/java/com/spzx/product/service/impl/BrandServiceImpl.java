@@ -4,6 +4,7 @@ package com.spzx.product.service.impl;
 import com.spzx.product.domain.Brand;
 import com.spzx.product.mapper.BrandMapper;
 import com.spzx.product.service.IBrandService;
+import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,7 +16,7 @@ import java.util.List;
 @Service
 public class BrandServiceImpl implements IBrandService {
     
-    @Autowired
+    @Resource
     private BrandMapper brandMapper;
 
 
@@ -26,8 +27,8 @@ public class BrandServiceImpl implements IBrandService {
      * @return 分类品牌
      */
     @Override
-    public List<Brand> selectBrandList() {
-        return brandMapper.selectBrandList();
+    public List<Brand> selectBrandList(Brand brand) {
+        return brandMapper.selectBrandList(brand);
     }
 
 
@@ -44,6 +45,22 @@ public class BrandServiceImpl implements IBrandService {
     @Override
     public int insertBrand(Brand brand) {
         return brandMapper.insertBrand(brand);
+    }
+
+    @Override
+    public int updateBrand(Brand brand) {
+        return brandMapper.updateBrand(brand);
+    }
+
+
+    @Override
+    public int deleteBrandById(Long id) {
+        return brandMapper.deleteBrandById(id);
+    }
+
+    @Override
+    public List<Brand> getAllBrand() {
+        return brandMapper.selectBrandList(null);
     }
 
 }

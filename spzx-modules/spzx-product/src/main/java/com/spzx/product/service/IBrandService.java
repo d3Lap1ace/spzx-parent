@@ -21,7 +21,7 @@ public interface IBrandService {
      * @param brand 分类品牌
      * @return 分类品牌集合
      */
-    List<Brand> selectBrandList();
+    List<Brand> selectBrandList(Brand brand);
 
     /**
      * 获取品牌详细信息
@@ -36,4 +36,24 @@ public interface IBrandService {
      * @return
      */
     int insertBrand(Brand brand);
+
+    /**
+     * 修改品牌
+     * @param brand
+     * @return
+     */
+    int updateBrand(Brand brand);
+
+    /**
+     * 删除品牌
+     * @param id
+     * @return
+     */
+    int deleteBrandById(Long id);
+
+    /**
+     * 获取全部品牌
+     * @return
+     */
+    List<Brand> getAllBrand();
 }

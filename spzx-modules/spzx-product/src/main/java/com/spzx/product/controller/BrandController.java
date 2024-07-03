@@ -3,6 +3,7 @@ package com.spzx.product.controller;
 import com.spzx.common.core.web.controller.BaseController;
 import com.spzx.common.core.web.domain.AjaxResult;
 import com.spzx.common.core.web.page.TableDataInfo;
+import com.spzx.common.security.utils.SecurityUtils;
 import com.spzx.product.domain.Brand;
 import com.spzx.product.service.IBrandService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -35,9 +36,9 @@ public class BrandController extends BaseController {
      */
     @Operation(summary = "查询品牌列表")
     @GetMapping("/list")
-    public TableDataInfo list(){
+    public TableDataInfo list(Brand brand){
         startPage();
-        List<Brand> list = brandService.selectBrandList();
+        List<Brand> list = brandService.selectBrandList(brand);
         return getDataTable(list);
     }
 
@@ -53,9 +54,50 @@ public class BrandController extends BaseController {
         return success(brandService.getBrandInfo(id));
     }
 
+    /**
+     * 新增品牌信息
+     * @param brand
+     * @return
+     */
     @Operation(summary = "新增品牌信息")
     @PostMapping
     public AjaxResult insertBrand(@RequestBody Brand brand){
         return success(brandService.insertBrand(brand));
     }
+
+    /**
+     * 修改信息
+     * @param brand
+     * @return
+     */
+    @Operation(summary = "修改信息")
+    @PutMapping
+    public AjaxResult updateBrand(@RequestBody Brand brand){
+        brand.setUpdateBy(SecurityUtils.getUsername());
+        return toAjax(brandService.updateBrand(brand));
+
+    }
+
+    /**
+     * 删除信息
+     * @param id
+     * @return
+     */
+    @Operation(summary = "删除信息")
+    @PostMapping("/{id}")
+    public AjaxResult deleteBrand(@PathVariable Long id){
+        return toAjax(brandService.deleteBrandById(id));
+    }
+
+    /**
+     * 获取全部品牌
+     * @return
+     */
+    @Operation(summary = "获取全部品牌")
+    @GetMapping("/allBrand")
+    public AjaxResult getAllBrand(){
+        return success(brandService.getAllBrand());
+    }
+
+
 }
