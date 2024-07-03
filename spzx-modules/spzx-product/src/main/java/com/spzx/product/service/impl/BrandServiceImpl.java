@@ -54,8 +54,8 @@ public class BrandServiceImpl implements IBrandService {
 
 
     @Override
-    public int deleteBrandById(Long id) {
-        return brandMapper.deleteBrandById(id);
+    public int deleteBrandById(Long[] ids) {
+        return brandMapper.deleteBrandById(ids);
     }
 
     @Override

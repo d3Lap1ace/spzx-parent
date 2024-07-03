@@ -31,7 +31,7 @@ public interface BrandMapper {
     int updateBrand(Brand brand);
 
 
-    int deleteBrandById(Long id);
+    int deleteBrandById(Long[] ids);
 
 
 }

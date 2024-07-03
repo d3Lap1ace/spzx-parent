@@ -49,7 +49,7 @@ public interface IBrandService {
      * @param id
      * @return
      */
-    int deleteBrandById(Long id);
+    int deleteBrandById(Long[] ids);
 
     /**
      * 获取全部品牌

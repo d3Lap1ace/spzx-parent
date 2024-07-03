@@ -85,8 +85,8 @@ public class BrandController extends BaseController {
      */
     @Operation(summary = "删除信息")
     @PostMapping("/{id}")
-    public AjaxResult deleteBrand(@PathVariable Long id){
-        return toAjax(brandService.deleteBrandById(id));
+    public AjaxResult deleteBrand(@PathVariable Long[] ids){
+        return toAjax(brandService.deleteBrandById(ids));
     }
 
     /**
