@@ -80,11 +80,11 @@ public class BrandController extends BaseController {
 
     /**
      * 删除信息
-     * @param id
+     * @param
      * @return
      */
     @Operation(summary = "删除信息")
-    @PostMapping("/{id}")
+    @PostMapping("/{ids}")
     public AjaxResult deleteBrand(@PathVariable Long[] ids){
         return toAjax(brandService.deleteBrandById(ids));
     }
