@@ -14,7 +14,7 @@ import java.util.List;
  */
 
 
-public interface IBrandService {
+public interface BrandService {
     /**
      * 查询分类品牌列表
      *
@@ -46,7 +46,7 @@ public interface IBrandService {
 
     /**
      * 删除品牌
-     * @param id
+     * @param
      * @return
      */
     int deleteBrandById(Long[] ids);

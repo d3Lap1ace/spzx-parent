@@ -5,7 +5,7 @@ import com.spzx.common.core.web.domain.AjaxResult;
 import com.spzx.common.core.web.page.TableDataInfo;
 import com.spzx.common.security.utils.SecurityUtils;
 import com.spzx.product.domain.Brand;
-import com.spzx.product.service.IBrandService;
+import com.spzx.product.service.BrandService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +28,7 @@ import java.util.List;
 public class BrandController extends BaseController {
 
     @Autowired
-    private IBrandService brandService;
+    private BrandService brandService;
 
     /**
      * 获取品牌列表

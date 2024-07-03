@@ -3,7 +3,7 @@ package com.spzx.product.service.impl;
 
 import com.spzx.product.domain.Brand;
 import com.spzx.product.mapper.BrandMapper;
-import com.spzx.product.service.IBrandService;
+import com.spzx.product.service.BrandService;
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,7 +14,7 @@ import java.util.List;
  * 品牌Service业务层处理
  */
 @Service
-public class BrandServiceImpl implements IBrandService {
+public class BrandServiceImpl implements BrandService {
     
     @Resource
     private BrandMapper brandMapper;

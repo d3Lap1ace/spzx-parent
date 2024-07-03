@@ -13,7 +13,7 @@ import java.util.List;
  * @Version 1.0
  * From the Laplace Demon
  */
-public interface CategoryBrandService extends IService<CategoryBrand> {
+public interface ICategoryBrandService extends IService<CategoryBrand> {
 
     /**
      * 查询分类品牌列表

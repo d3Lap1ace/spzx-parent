@@ -6,8 +6,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.spzx.common.core.exception.ServiceException;
 import com.spzx.product.domain.CategoryBrand;
 import com.spzx.product.mapper.CategoryBrandMapper;
-import com.spzx.product.service.CategoryBrandService;
-import com.spzx.product.service.CategoryService;
+import com.spzx.product.service.ICategoryBrandService;
+import com.spzx.product.service.ICategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -22,10 +22,10 @@ import java.util.List;
  * From the Laplace Demon
  */
 @Service
-public class CategoryBrandServiceImpl extends ServiceImpl<CategoryBrandMapper, CategoryBrand> implements CategoryBrandService{
+public class CategoryBrandServiceImpl extends ServiceImpl<CategoryBrandMapper, CategoryBrand> implements ICategoryBrandService{
 
     @Autowired
-    private CategoryService categoryService;
+    private ICategoryService categoryService;
 
 
     @Override

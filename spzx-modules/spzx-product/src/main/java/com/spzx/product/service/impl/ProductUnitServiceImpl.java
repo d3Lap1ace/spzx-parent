@@ -24,7 +24,7 @@ import java.util.Arrays;
  */
 
 @Service
-public class IProductUnitServiceImpl extends ServiceImpl<ProductUnitMapper,ProductUnit> implements IProductUnitService {
+public class ProductUnitServiceImpl extends ServiceImpl<ProductUnitMapper,ProductUnit> implements IProductUnitService {
 
     @Resource
     private ProductUnitMapper productUnitMapper;

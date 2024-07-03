@@ -1,7 +1,7 @@
 package com.spzx.product.controller;
 
 import com.spzx.common.core.web.domain.AjaxResult;
-import com.spzx.product.service.CategoryService;
+import com.spzx.product.service.ICategoryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +26,7 @@ import static com.spzx.common.core.web.domain.AjaxResult.success;
 @RequestMapping("/category")
 public class CategoryController {
     @Autowired
-    private CategoryService categoryService;
+    private ICategoryService categoryService;
 
     @Operation(summary = "获取分类下拉树列表")
     @GetMapping("/treeSelect/{id}")

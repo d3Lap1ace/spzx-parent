@@ -16,7 +16,7 @@ import java.util.List;
  */
 
 @Service
-public interface CategoryService extends IService<Category> {
+public interface ICategoryService extends IService<Category> {
     /**
      * 获取分类下拉树列表
      * @param id

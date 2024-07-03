@@ -5,7 +5,7 @@ import com.spzx.common.core.web.domain.AjaxResult;
 import com.spzx.common.core.web.page.TableDataInfo;
 import com.spzx.common.security.utils.SecurityUtils;
 import com.spzx.product.domain.CategoryBrand;
-import com.spzx.product.service.CategoryBrandService;
+import com.spzx.product.service.ICategoryBrandService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +27,7 @@ import java.util.List;
 @RequestMapping("/categoryBrand")
 public class CategoryBrandController extends BaseController {
     @Autowired
-    private CategoryBrandService categoryBrandService;
+    private ICategoryBrandService categoryBrandService;
 
     /**
      * 查询分类品牌列表
