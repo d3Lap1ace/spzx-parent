@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spzx.product.mapper.CategoryBrandMapper">
+    <select id="selectCategoryBrandList" resultType="com.spzx.product.domain.CategoryBrand">
+        select cb.* from category_brand cb
+        left join category c on c.id = cb.category_id and c.del_flag = 0
+        left join brand b on b.id =cb.brand_id and b.del_flag = 0
+        <where>
+            and cb.del_flag = 0
+            <if test="brandId != null">
+                cb.brand_id = #{brandId}
+            </if>
+            <if test="categoryId != null">
+                cb.categoryId = #{categoryId}
+            </if>
+        </where>
+    </select>
+</mapper>

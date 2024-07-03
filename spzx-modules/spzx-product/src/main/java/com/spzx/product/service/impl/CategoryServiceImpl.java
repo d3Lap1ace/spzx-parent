@@ -9,6 +9,7 @@ import com.spzx.product.service.CategoryService;
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +32,18 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
         LambdaQueryWrapper<Category> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Category::getParentId,id);
         List<Category> list = categoryMapper.selectList(wrapper);
+
+        if(!CollectionUtils.isEmpty(list)){
+            list.forEach(it->{
+                long count = categoryMapper.selectCount(new LambdaQueryWrapper<Category>()
+                        .eq(Category::getParentId,it.getId()));
+                if(count > 0){
+                    it.setHasChildren(true);
+                }else {
+                    it.setHasChildren(false);
+                }
+            });
+        }
         return list;
     }
 

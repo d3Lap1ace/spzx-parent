@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -107,8 +108,8 @@ public class ProductUnitController extends BaseController {
 
     @Operation(summary = "删除单位")
     @DeleteMapping("/{ids}")
-    public AjaxResult deleteProductUnit(@PathVariable List ids){
-        return toAjax(productUnitService.removeBatchByIds(ids));
+    public AjaxResult deleteProductUnit(@PathVariable Long[] ids){
+        return toAjax(productUnitService.removeBatchByIds(Arrays.asList(ids)));
     }
 
 }

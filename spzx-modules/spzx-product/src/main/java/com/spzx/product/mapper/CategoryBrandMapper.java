@@ -3,6 +3,8 @@ package com.spzx.product.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.spzx.product.domain.CategoryBrand;
 
+import java.util.List;
+
 /**
  * @classname spzx-parent
  * @Auther d3Lap1ace
@@ -12,4 +14,12 @@ import com.spzx.product.domain.CategoryBrand;
  * From the Laplace Demon
  */
 public interface CategoryBrandMapper extends BaseMapper<CategoryBrand> {
+
+    /**
+     * 查询分类品牌列表
+     *
+     * @param categoryBrand 分类品牌
+     * @return 分类品牌集合
+     */
+    List<CategoryBrand> selectCategoryBrandList(CategoryBrand categoryBrand);
 }
