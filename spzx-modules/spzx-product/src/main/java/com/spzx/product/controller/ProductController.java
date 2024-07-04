@@ -71,5 +71,50 @@ public class ProductController extends BaseController {
         return success(productService.getProductById(id));
     }
 
+    /**
+     * 修改商品
+     * @param product
+     * @return
+     */
+    @Operation(summary = "修改商品")
+    @PutMapping
+    public AjaxResult updateProduct(@RequestBody Product product) {
+        return toAjax(productService.updateProduct(product));
+    }
+
+
+    /**
+     * 删除商品
+     *
+     * @param ids
+     * @return
+     */
+    @Operation(summary = "删除商品")
+    @DeleteMapping("/{ids}")
+    public AjaxResult deleteProductByIds(@PathVariable Long[] ids) {
+        return toAjax(productService.deleteProductByIds(ids));
+    }
+
+
+    /**
+     * 商品审核
+     * @param id
+     * @param auditStatus
+     * @return
+     */
+    @Operation(summary = "商品审核")
+    @GetMapping("updateAuditStatus/{id}/{auditStatus}")
+    public AjaxResult updateAuditStatus(@PathVariable Long id, @PathVariable Integer auditStatus) {
+        productService.updateAuditStatus(id, auditStatus);
+        return success();
+    }
+
+    @Operation(summary = "更新上下架状态")
+    @GetMapping("updateStatus/{id}/{status}")
+    public AjaxResult updateStatus(@PathVariable Long id, @PathVariable Integer status) {
+        productService.updateStatus(id, status);
+        return success();
+    }
+
 
 }

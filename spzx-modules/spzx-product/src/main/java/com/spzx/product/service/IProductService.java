@@ -41,4 +41,32 @@ public interface IProductService extends IService<Product> {
      * @return
      */
     Product getProductById(Long id);
+
+    /**
+     * 修改商品
+     * @param product
+     * @return
+     */
+    int updateProduct(Product product);
+
+    /**
+     * 删除商品
+     * @param ids
+     * @return
+     */
+    int deleteProductByIds(Long[] ids);
+
+    /**
+     * 商品审核
+     * @param id
+     * @param auditStatus
+     */
+    void updateAuditStatus(Long id, Integer auditStatus);
+
+    /**
+     * 跟新上下架状态
+     * @param id
+     * @param status
+     */
+    void updateStatus(Long id, Integer status);
 }
