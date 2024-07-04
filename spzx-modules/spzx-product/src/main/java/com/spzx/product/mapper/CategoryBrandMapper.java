@@ -1,6 +1,7 @@
 package com.spzx.product.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.spzx.product.domain.Brand;
 import com.spzx.product.domain.CategoryBrand;
 
 import java.util.List;
@@ -22,4 +23,6 @@ public interface CategoryBrandMapper extends BaseMapper<CategoryBrand> {
      * @return 分类品牌集合
      */
     List<CategoryBrand> selectCategoryBrandList(CategoryBrand categoryBrand);
+
+    List<Brand> getBrandListByCategoryId(Long categoryId);
 }

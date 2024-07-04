@@ -112,4 +112,10 @@ public class ProductUnitController extends BaseController {
         return toAjax(productUnitService.removeBatchByIds(Arrays.asList(ids)));
     }
 
+    @Operation(summary = "获取全部单位")
+    @GetMapping("getUnitAll")
+    public AjaxResult getProductUnitAll(){
+        return success(productUnitService.list());
+    }
+
 }

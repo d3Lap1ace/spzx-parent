@@ -1,6 +1,7 @@
 package com.spzx.product.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.spzx.product.domain.Brand;
 import com.spzx.product.domain.CategoryBrand;
 
 import java.util.List;
@@ -42,4 +43,11 @@ public interface ICategoryBrandService extends IService<CategoryBrand> {
      * @return
      */
     int updateCategoryBrand(CategoryBrand categoryBrand);
+
+    /**
+     * 根据分类id获取品牌列表
+     * @param categoryId
+     * @return
+     */
+    List<Brand> getBrandListByCategoryId(Long categoryId);
 }

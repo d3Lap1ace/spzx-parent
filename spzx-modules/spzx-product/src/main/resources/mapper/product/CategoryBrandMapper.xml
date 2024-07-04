@@ -17,4 +17,14 @@
             </if>
         </where>
     </select>
+    <select id="getBrandListByCategoryId" resultType="com.spzx.product.domain.Brand">
+        select
+            b.id,
+            b.name,
+            b.logo,
+            cb.brand_id
+        from category_brand cb
+        left join brand b on b.id = cb.brand_id
+        where cb.del_flag = 0 and b.del_flag = 0
+    </select>
 </mapper>

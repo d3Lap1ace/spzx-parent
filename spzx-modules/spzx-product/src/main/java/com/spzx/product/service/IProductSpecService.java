@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.spzx.product.domain.ProductSpec;
 
+import java.util.List;
+
 /**
  * @classname spzx-parent
  * @Auther d3Lap1ace
@@ -14,4 +16,25 @@ import com.spzx.product.domain.ProductSpec;
  */
 public interface IProductSpecService extends IService<ProductSpec> {
 
+    /**
+     * 根据id获取商品规格详细信息
+     * @param id
+     * @return
+     */
+    ProductSpec getProductSpecInfo(Long id);
+
+    /**
+     * 分页查询商品规格列表
+     * @param productSpecPage
+     * @param productSpec
+     * @return
+     */
+    IPage<ProductSpec> pageProductSpecQuery(IPage<ProductSpec> productSpecPage, ProductSpec productSpec);
+
+    /**
+     * 根据分类id获取商品规格列表
+     * @param categoryId
+     * @return
+     */
+    List<ProductSpec> getProductSpecListByCategoryId(Long categoryId);
 }
