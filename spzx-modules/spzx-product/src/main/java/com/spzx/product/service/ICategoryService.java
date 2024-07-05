@@ -26,8 +26,8 @@ public interface ICategoryService extends IService<Category> {
 
     /**
      * 获取本层id以及上层id
-     * @param categoryId
+     * @param Id
      * @return
      */
-    List<Long> getCategoryByCategoryId(Long categoryId);
+    List<Long> getCategoryByCategoryId(Long Id);
 }

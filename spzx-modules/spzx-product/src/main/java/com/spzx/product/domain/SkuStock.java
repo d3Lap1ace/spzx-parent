@@ -1,5 +1,6 @@
 package com.spzx.product.domain;
 
+import com.spzx.common.core.web.domain.BaseEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -14,7 +15,7 @@ import lombok.Data;
 
 @Data
 @Schema(description = "商品sku库存")
-public class SkuStock {
+public class SkuStock extends BaseEntity {
     private static final long serialVersionUID = 1L;
 
     @Schema(description = "skuID")

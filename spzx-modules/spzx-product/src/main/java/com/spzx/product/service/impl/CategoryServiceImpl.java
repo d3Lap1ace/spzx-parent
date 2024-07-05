@@ -48,10 +48,10 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     }
 
     @Override
-    public List<Long> getCategoryByCategoryId(Long categoryId) {
+    public List<Long> getCategoryByCategoryId(Long Id) {
         ArrayList<Long> list = new ArrayList<>();
 
-        List<Category> categoryList = getParentCategory(categoryId,new ArrayList<Category>());
+        List<Category> categoryList = this.getParentCategory(Id,new ArrayList<Category>());
 
         int size = categoryList.size();
         for(int i = size;i > 0; --i){
@@ -62,11 +62,11 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
         return list;
     }
 
-    private List<Category> getParentCategory(Long categoryId, ArrayList<Category> categoryList) {
+    private List<Category> getParentCategory(Long Id, ArrayList<Category> categoryList) {
 
-        while (categoryId > 0){
+        while (Id > 0){
             LambdaQueryWrapper<Category> categoryLambdaQueryWrapper = new LambdaQueryWrapper<>();
-            categoryLambdaQueryWrapper.eq(Category::getId,categoryId).select(Category::getId,Category::getParentId);
+            categoryLambdaQueryWrapper.eq(Category::getId,Id).select(Category::getId,Category::getParentId);
             Category category = categoryMapper.selectOne(categoryLambdaQueryWrapper);;
             categoryList.add(category);
             return getParentCategory(category.getParentId(),categoryList);

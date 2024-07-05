@@ -17,7 +17,7 @@
             </if>
         </where>
     </select>
-    <select id="getBrandListByCategoryId" resultType="com.spzx.product.domain.Brand">
+    <select id="getBrandListByCategoryId" parameterType="Long" resultType="com.spzx.product.domain.Brand">
         select
             b.id,
             b.name,

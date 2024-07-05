@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.spzx.common.core.web.page.TableDataInfo;
 import com.spzx.product.domain.*;
 import com.spzx.product.mapper.ProductDetailsMapper;
 import com.spzx.product.mapper.ProductMapper;
@@ -12,7 +11,6 @@ import com.spzx.product.mapper.ProductSkuMapper;
 import com.spzx.product.mapper.SkuStockMapper;
 import com.spzx.product.service.IProductService;
 import jakarta.annotation.Resource;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -20,7 +18,6 @@ import org.springframework.util.StringUtils;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -63,11 +60,12 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         List<ProductSku> productSkuList = product.getProductSkuList();
 
         // 商品sku赋值并添加
-        for (int i = 0,skuListSize = productSkuList.size(); i < skuListSize; ++i) {
+        for (int i = 0, size = productSkuList.size(); i < size; i++) {
             ProductSku productSku = productSkuList.get(i);
-            productSku.setSkuCode(product.getId()+"_"+i);
-            productSku.setSkuName(product.getName()+" "+productSku.getSkuSpec());
+            productSku.setSkuCode(product.getId() + "_" + i);
             productSku.setProductId(product.getId());
+            String skuName = product.getName() + " " + productSku.getSkuSpec();
+            productSku.setSkuName(skuName);
             productSkuMapper.insert(productSku);
 
             // 商品库存赋值并添加
@@ -95,9 +93,9 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         Product product = baseMapper.selectById(id);
 
         // sku列表
-        List<ProductSku> productSkuList = product.getProductSkuList();
         LambdaQueryWrapper<ProductSku> productSkuLambdaQueryWrapper = new LambdaQueryWrapper<>();
         productSkuLambdaQueryWrapper.eq(ProductSku::getProductId,id);
+        List<ProductSku> productSkuList = productSkuMapper.selectList(productSkuLambdaQueryWrapper);
 
         // 查询库存
         List<Long> skuIdList = productSkuList.stream().map(ProductSku::getId).collect(Collectors.toList()); // skuid集合

@@ -6,7 +6,6 @@ import com.spzx.common.core.web.controller.BaseController;
 import com.spzx.common.core.web.domain.AjaxResult;
 import com.spzx.common.core.web.page.TableDataInfo;
 import com.spzx.product.domain.Product;
-import com.spzx.product.domain.ProductSpec;
 import com.spzx.product.service.IProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -59,6 +58,7 @@ public class ProductController extends BaseController {
     @Operation(summary = "新增商品")
     @PostMapping
     public AjaxResult add(@RequestBody Product product) {
+
         return toAjax(productService.insertProduct(product));
     }
 
