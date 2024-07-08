@@ -10,10 +10,10 @@
         <where>
             and cb.del_flag = 0
             <if test="brandId != null">
-                cb.brand_id = #{brandId}
+                and cb.brand_id = #{brandId}
             </if>
             <if test="categoryId != null">
-                cb.category_id = #{categoryId}
+                and cb.category_id = #{categoryId}
             </if>
         </where>
     </select>

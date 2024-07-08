@@ -64,6 +64,12 @@
             <artifactId>spzx-common-log</artifactId>
         </dependency>
 
+        <!-- excel tool -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

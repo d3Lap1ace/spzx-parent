@@ -41,8 +41,8 @@ public class ProductController extends BaseController {
      */
     @Operation(summary = "分页查询商品列表")
     @GetMapping("/list")
-    public TableDataInfo pageProductQuery(@RequestParam Integer current,
-                                          @RequestParam Integer size,
+    public TableDataInfo pageProductQuery(@RequestParam (value = "current",defaultValue = "1",required = true)Integer current,
+                                          @RequestParam (value = "size",defaultValue = "5",required = true)Integer size,
                                           Product product){
         Page<Product> productPage = new Page<>(current,size);
         IPage<Product> productList = productService.pageProductQuery(productPage,product);
