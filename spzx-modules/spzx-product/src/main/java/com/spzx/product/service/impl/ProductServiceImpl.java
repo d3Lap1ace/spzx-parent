@@ -99,14 +99,20 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
 
         // 查询库存
         List<Long> skuIdList = productSkuList.stream().map(ProductSku::getId).collect(Collectors.toList()); // skuid集合
+
         List<SkuStock> skuStockList = skuStockMapper.selectList(new LambdaQueryWrapper<SkuStock>()
                 .in(SkuStock::getSkuId,skuIdList)
                 .select(SkuStock::getSkuId, SkuStock::getTotalNum));
+
+
         Map<Long, Integer> skuIdToStockNumMap = skuStockList.stream()
                 .collect(Collectors.toMap(SkuStock::getSkuId, SkuStock::getTotalNum));
+
         productSkuList.forEach(item -> {
             item.setStockNum(skuIdToStockNumMap.get(item.getId()));
         });
+
+
         product.setProductSkuList(productSkuList);
 
         //商品详情

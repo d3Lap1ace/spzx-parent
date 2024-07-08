@@ -43,9 +43,9 @@ public class ProductSpecController extends BaseController {
     @Operation(summary = "分页查询商品规格列表")
     @GetMapping("/list")
     public TableDataInfo getPageList(@Parameter(name = "current", description = "当前页码", required = true)
-                                         @RequestParam Integer current,
+                                     @RequestParam(value = "current",defaultValue = "1",required = true) Integer current,
                                      @Parameter(name = "size", description = "每页记录数", required = true)
-                                     @RequestParam Integer size,
+                                     @RequestParam (value= "size",defaultValue = "5",required = true) Integer size,
                                      ProductSpec productSpec){
         IPage<ProductSpec> productSpecPage = new Page<>(current, size);
         IPage<ProductSpec> productSpeclist = productSpecService.pageProductSpecQuery(productSpecPage,productSpec);

@@ -94,7 +94,7 @@ public class BrandController extends BaseController {
      * @return
      */
     @Operation(summary = "获取全部品牌")
-    @GetMapping("/allBrand")
+    @GetMapping("/getBrandAll")
     public AjaxResult getAllBrand(){
         return success(brandService.getAllBrand());
     }
