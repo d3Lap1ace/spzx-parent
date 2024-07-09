@@ -2,7 +2,9 @@ package com.spzx.product.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.spzx.product.domain.Category;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -30,4 +32,16 @@ public interface ICategoryService extends IService<Category> {
      * @return
      */
     List<Long> getCategoryByCategoryId(Long Id);
+
+    /**
+     * 文件导入
+     * @param file
+     */
+    void importData(MultipartFile file);
+
+    /**
+     * 文件导出
+     * @param response
+     */
+    void exportData(HttpServletResponse response);
 }
