@@ -3,6 +3,9 @@ package com.spzx.product.controller;
 import com.spzx.common.core.web.controller.BaseController;
 import com.spzx.common.core.web.domain.AjaxResult;
 import com.spzx.common.core.web.page.TableDataInfo;
+import com.spzx.common.log.annotation.Log;
+import com.spzx.common.log.enums.BusinessType;
+import com.spzx.common.security.annotation.RequiresPermissions;
 import com.spzx.common.security.utils.SecurityUtils;
 import com.spzx.product.domain.Brand;
 import com.spzx.product.service.BrandService;
@@ -35,6 +38,7 @@ public class BrandController extends BaseController {
      * @return
      */
     @Operation(summary = "查询品牌列表")
+    @RequiresPermissions("product:brand:list")
     @GetMapping("/list")
     public TableDataInfo list(Brand brand){
         startPage();
@@ -49,6 +53,7 @@ public class BrandController extends BaseController {
      * @return
      */
     @Operation(summary = "获取品牌详细信息")
+    @RequiresPermissions("product:brand:query")
     @GetMapping("/{id}")
     public AjaxResult getBrandInfo(@PathVariable Long id){
         return success(brandService.getBrandInfo(id));
@@ -60,6 +65,8 @@ public class BrandController extends BaseController {
      * @return
      */
     @Operation(summary = "新增品牌信息")
+    @RequiresPermissions("product:brand:add")
+    @Log(title = "品牌管理", businessType = BusinessType.INSERT)
     @PostMapping
     public AjaxResult insertBrand(@RequestBody Brand brand){
         return success(brandService.insertBrand(brand));
@@ -71,6 +78,8 @@ public class BrandController extends BaseController {
      * @return
      */
     @Operation(summary = "修改信息")
+    @Log(title = "品牌管理", businessType = BusinessType.UPDATE)
+    @RequiresPermissions("product:brand:edit")
     @PutMapping
     public AjaxResult updateBrand(@RequestBody Brand brand){
         brand.setUpdateBy(SecurityUtils.getUsername());
@@ -84,6 +93,8 @@ public class BrandController extends BaseController {
      * @return
      */
     @Operation(summary = "删除信息")
+    @Log(title = "品牌管理", businessType = BusinessType.DELETE)
+    @RequiresPermissions("product:brand:remove")
     @PostMapping("/{ids}")
     public AjaxResult deleteBrand(@PathVariable Long[] ids){
         return toAjax(brandService.deleteBrandById(ids));
@@ -94,6 +105,7 @@ public class BrandController extends BaseController {
      * @return
      */
     @Operation(summary = "获取全部品牌")
+    @RequiresPermissions("product:brand:query")
     @GetMapping("/getBrandAll")
     public AjaxResult getAllBrand(){
         return success(brandService.getAllBrand());
