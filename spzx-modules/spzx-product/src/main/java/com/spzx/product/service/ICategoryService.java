@@ -1,6 +1,7 @@
 package com.spzx.product.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.spzx.product.api.domain.vo.CategoryVo;
 import com.spzx.product.domain.Category;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Service;
@@ -44,4 +45,10 @@ public interface ICategoryService extends IService<Category> {
      * @param response
      */
     void exportData(HttpServletResponse response);
+
+    /**
+     * 查询所有一级分类
+     * @return
+     */
+    List<CategoryVo> getOneCategory();
 }

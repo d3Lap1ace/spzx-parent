@@ -26,4 +26,12 @@
         spzx-modules业务模块
     </description>
 
+    <dependencies>
+        <dependency>
+            <groupId>com.spzx</groupId>
+            <artifactId>spzx-api-product</artifactId>
+            <version>3.6.3</version>
+        </dependency>
+    </dependencies>
+
 </project>

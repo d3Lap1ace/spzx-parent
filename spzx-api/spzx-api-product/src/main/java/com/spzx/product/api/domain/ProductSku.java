@@ -1,4 +1,4 @@
-package com.spzx.product.domain;
+package com.spzx.product.api.domain;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.spzx.common.core.web.domain.BaseEntity;
@@ -59,4 +59,8 @@ public class ProductSku extends BaseEntity {
     @Schema(description = "sku库存")
     @TableField(exist = false)
     private Integer stockNum;
+
+    @Schema(description = "sku销量")
+    @TableField(exist = false)
+    private Integer saleNum;
 }

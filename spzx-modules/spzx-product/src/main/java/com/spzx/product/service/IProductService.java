@@ -3,8 +3,7 @@ package com.spzx.product.service;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.spzx.common.core.web.page.TableDataInfo;
-import com.spzx.product.domain.Brand;
+import com.spzx.product.api.domain.ProductSku;
 import com.spzx.product.domain.Product;
 
 import java.util.List;
@@ -69,4 +68,11 @@ public interface IProductService extends IService<Product> {
      * @param status
      */
     void updateStatus(Long id, Integer status);
+
+
+    /**
+     * 获取销量好的sku
+     * @return
+     */
+    List<ProductSku> getTopSale();
 }

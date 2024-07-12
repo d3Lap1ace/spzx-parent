@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.spzx.product.api.domain.ProductSku;
 import com.spzx.product.domain.*;
 import com.spzx.product.mapper.ProductDetailsMapper;
 import com.spzx.product.mapper.ProductMapper;
@@ -185,5 +186,10 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
             product.setStatus(-1);
         }
         baseMapper.updateById(product);
+    }
+
+    @Override
+    public List<ProductSku> getTopSale() {
+        return productSkuMapper.selectTopSale();
     }
 }

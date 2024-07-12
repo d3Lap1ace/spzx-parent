@@ -1,16 +1,16 @@
-package com.spzx;
+package com.spzx.channel;
 
 import com.spzx.common.security.annotation.EnableCustomConfig;
 import com.spzx.common.security.annotation.EnableRyFeignClients;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 
-@SpringBootApplication
+@SpringBootApplication(exclude = DataSourceAutoConfiguration.class)//取消数据源自动配置
 @EnableCustomConfig
 @EnableRyFeignClients
 public class SpzxChannelApplication {
     public static void main(String[] args) {
         SpringApplication.run(SpzxChannelApplication.class);
-
     }
 }

@@ -1,6 +1,9 @@
 package com.spzx.product.controller;
 
+import com.spzx.common.core.domain.R;
 import com.spzx.common.core.web.domain.AjaxResult;
+import com.spzx.common.security.annotation.InnerAuth;
+import com.spzx.product.api.domain.vo.CategoryVo;
 import com.spzx.product.service.ICategoryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -8,6 +11,8 @@ import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 import static com.spzx.common.core.web.domain.AjaxResult.success;
 
@@ -58,5 +63,11 @@ public class CategoryController {
     @PostMapping("/export")
     public void export(HttpServletResponse response) {
         categoryService.exportData(response);
+    }
+
+    @InnerAuth
+    @GetMapping(value = "/getOneCategory")
+    public R<List<CategoryVo>> getOneCategory() {
+        return R.ok(categoryService.getOneCategory());
     }
 }

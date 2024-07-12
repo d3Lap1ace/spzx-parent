@@ -4,6 +4,7 @@ import com.alibaba.excel.EasyExcel;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.mapper.Mapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.spzx.product.api.domain.vo.CategoryVo;
 import com.spzx.product.domain.Category;
 import com.spzx.product.domain.vo.CategoryExcelVo;
 import com.spzx.product.mapper.CategoryMapper;
@@ -132,6 +133,17 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public List<CategoryVo> getOneCategory() {
+        List<Category> categoryList = categoryMapper.selectList(new LambdaQueryWrapper<Category>().eq(Category::getParentId, 0));
+        List<CategoryVo> categoryVoList = categoryList.stream().map(category -> {
+            CategoryVo categoryVo = new CategoryVo();
+            BeanUtils.copyProperties(category, categoryVo, CategoryVo.class);
+            return categoryVo;
+        }).collect(Collectors.toList());
+        return categoryVoList;
     }
 
     private List<Category> getParentCategory(Long Id, ArrayList<Category> categoryList) {
