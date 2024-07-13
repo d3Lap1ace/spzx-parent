@@ -43,7 +43,7 @@
     </delete>
 
 
-    <select id="selectBrandList" resultType="com.spzx.product.domain.Brand">
+    <select id="selectBrandList" resultType="com.spzx.product.api.domain.Brand">
         select * from brand
         <where>
             and del_flag = 0
@@ -58,7 +58,9 @@
             </if>
         </where>
     </select>
-
+    <select id="getBrandInfo" resultType="com.spzx.product.api.domain.Brand">
+        select * from brand where id = #{id}
+    </select>
 
 
 </mapper>

@@ -5,9 +5,10 @@ import com.spzx.common.core.web.domain.AjaxResult;
 import com.spzx.common.core.web.page.TableDataInfo;
 import com.spzx.common.log.annotation.Log;
 import com.spzx.common.log.enums.BusinessType;
+import com.spzx.common.security.annotation.InnerAuth;
 import com.spzx.common.security.annotation.RequiresPermissions;
 import com.spzx.common.security.utils.SecurityUtils;
-import com.spzx.product.domain.Brand;
+import com.spzx.product.api.domain.Brand;
 import com.spzx.product.service.BrandService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -104,12 +105,12 @@ public class BrandController extends BaseController {
      * 获取全部品牌
      * @return
      */
+    @InnerAuth
     @Operation(summary = "获取全部品牌")
     @RequiresPermissions("product:brand:query")
     @GetMapping("/getBrandAll")
     public AjaxResult getAllBrand(){
         return success(brandService.getAllBrand());
     }
-
 
 }

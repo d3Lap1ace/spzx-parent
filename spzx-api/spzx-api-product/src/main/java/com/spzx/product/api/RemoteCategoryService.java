@@ -29,5 +29,8 @@ public interface RemoteCategoryService{
 
 
     @GetMapping(value = "/category/getOneCategory")
-    public R<List<CategoryVo>> getOneCategory(@RequestHeader(SecurityConstants.FROM_SOURCE) String source);
+    R<List<CategoryVo>> getOneCategory(@RequestHeader(SecurityConstants.FROM_SOURCE) String source);
+
+    @GetMapping(value = "/category/tree")
+    R<List<CategoryVo> > tree(@RequestHeader(SecurityConstants.FROM_SOURCE) String source);
 }

@@ -1,7 +1,7 @@
 package com.spzx.product.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.spzx.product.domain.Brand;
+import com.spzx.product.api.domain.Brand;
 import com.spzx.product.domain.CategoryBrand;
 import org.springframework.data.repository.query.Param;
 

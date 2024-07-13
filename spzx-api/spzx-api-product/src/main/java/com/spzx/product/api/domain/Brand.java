@@ -1,4 +1,4 @@
-package com.spzx.product.domain;
+package com.spzx.product.api.domain;
 
 import com.spzx.common.core.web.domain.BaseEntity;
 import io.swagger.v3.oas.annotations.media.Schema;

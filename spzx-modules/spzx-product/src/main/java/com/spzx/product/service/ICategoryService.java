@@ -51,4 +51,10 @@ public interface ICategoryService extends IService<Category> {
      * @return
      */
     List<CategoryVo> getOneCategory();
+
+    /**
+     * h5分类接口
+     * @return
+     */
+    List<CategoryVo> tree();
 }

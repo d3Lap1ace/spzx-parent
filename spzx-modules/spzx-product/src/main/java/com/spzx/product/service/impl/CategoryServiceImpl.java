@@ -9,6 +9,7 @@ import com.spzx.product.domain.Category;
 import com.spzx.product.domain.vo.CategoryExcelVo;
 import com.spzx.product.mapper.CategoryMapper;
 import com.spzx.product.service.ICategoryService;
+import com.spzx.product.utils.CategoryUtils;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.BeanUtils;
@@ -144,6 +145,17 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
             return categoryVo;
         }).collect(Collectors.toList());
         return categoryVoList;
+    }
+
+    @Override
+    public List<CategoryVo> tree() {
+        List<Category> categoryList = categoryMapper.selectList(null);
+        List<CategoryVo> categoryVoList = categoryList.stream().map(category -> {
+            CategoryVo categoryVo = new CategoryVo();
+            BeanUtils.copyProperties(category, categoryVo, CategoryVo.class);
+            return categoryVo;
+        }).collect(Collectors.toList());
+        return CategoryUtils.buildTree(categoryVoList);
     }
 
     private List<Category> getParentCategory(Long Id, ArrayList<Category> categoryList) {

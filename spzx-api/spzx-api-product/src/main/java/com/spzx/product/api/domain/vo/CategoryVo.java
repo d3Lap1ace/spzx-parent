@@ -2,6 +2,8 @@ package com.spzx.product.api.domain.vo;
 
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class CategoryVo
 {
@@ -17,5 +19,8 @@ public class CategoryVo
 
     /** 上级分类id */
     private Long parentId;
+
+    /** 下级分类 */
+    private List<CategoryVo> children;
 
 }

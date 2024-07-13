@@ -3,10 +3,15 @@ package com.spzx.product.service;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.spzx.product.api.domain.ProductDetails;
 import com.spzx.product.api.domain.ProductSku;
+import com.spzx.product.api.domain.SkuPrice;
+import com.spzx.product.api.domain.SkuQuery;
+import com.spzx.product.api.domain.vo.SkuStockVo;
 import com.spzx.product.domain.Product;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @classname spzx-parent
@@ -75,4 +80,20 @@ public interface IProductService extends IService<Product> {
      * @return
      */
     List<ProductSku> getTopSale();
+
+
+    List<ProductSku> selectProductSkuList(SkuQuery skuQuery);
+
+    
+    ProductSku getProductSku(Long skuId);
+
+    Product getProduct(Long id);
+
+    SkuPrice getSkuPrice(Long skuId);
+
+    ProductDetails getProductDetails(Long id);
+
+    Map<String, Long> getSkuSpecValue(Long id);
+
+    SkuStockVo getSkuStock(Long skuId);
 }

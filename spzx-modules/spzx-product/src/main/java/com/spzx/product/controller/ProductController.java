@@ -2,12 +2,17 @@ package com.spzx.product.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.github.pagehelper.PageHelper;
 import com.spzx.common.core.domain.R;
 import com.spzx.common.core.web.controller.BaseController;
 import com.spzx.common.core.web.domain.AjaxResult;
 import com.spzx.common.core.web.page.TableDataInfo;
 import com.spzx.common.security.annotation.InnerAuth;
+import com.spzx.product.api.domain.ProductDetails;
 import com.spzx.product.api.domain.ProductSku;
+import com.spzx.product.api.domain.SkuPrice;
+import com.spzx.product.api.domain.SkuQuery;
+import com.spzx.product.api.domain.vo.SkuStockVo;
 import com.spzx.product.domain.Product;
 import com.spzx.product.service.IProductService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -16,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @classname spzx-parent
@@ -112,6 +118,12 @@ public class ProductController extends BaseController {
         return success();
     }
 
+    /**
+     * 更新上下架状态
+     * @param id
+     * @param status
+     * @return
+     */
     @Operation(summary = "更新上下架状态")
     @GetMapping("updateStatus/{id}/{status}")
     public AjaxResult updateStatus(@PathVariable Long id, @PathVariable Integer status) {
@@ -119,6 +131,10 @@ public class ProductController extends BaseController {
         return success();
     }
 
+    /**
+     * 获取销量好的sku
+     * @return
+     */
     @InnerAuth
     @Operation(summary = "获取销量好的sku")
     @GetMapping("getTopSale")
@@ -126,5 +142,62 @@ public class ProductController extends BaseController {
         return R.ok(productService.getTopSale());
     }
 
+    @InnerAuth
+    @GetMapping("/skuList/{pageNum}/{pageSize}")
+    public R<TableDataInfo> skuList(
+            @PathVariable Integer pageNum,
+            @PathVariable Integer pageSize,
+            @ModelAttribute SkuQuery skuQuery) {
+        PageHelper.startPage(pageNum, pageSize);
+        List<ProductSku> list = productService.selectProductSkuList(skuQuery);
+        return R.ok(getDataTable(list));
+    }
 
+    @Operation(summary = "获取商品sku信息")
+    @InnerAuth
+    @GetMapping(value = "/getProductSku/{skuId}")
+    public R<ProductSku> getProductSku(@PathVariable("skuId") Long skuId)
+    {
+        return R.ok(productService.getProductSku(skuId));
+    }
+
+    @Operation(summary = "获取商品信息")
+    @InnerAuth
+    @GetMapping(value = "/getProduct/{id}")
+    public R<Product> getProduct(@PathVariable("id") Long id)
+    {
+        return R.ok(productService.getProduct(id));
+    }
+
+    @Operation(summary = "获取商品sku最新价格信息")
+    @InnerAuth
+    @GetMapping(value = "/getSkuPrice/{skuId}")
+    public R<SkuPrice> getSkuPrice(@PathVariable("skuId") Long skuId)
+    {
+        return R.ok(productService.getSkuPrice(skuId));
+    }
+
+    @Operation(summary = "获取商品详细信息")
+    @InnerAuth
+    @GetMapping(value = "/getProductDetails/{id}")
+    public R<ProductDetails> getProductDetails(@PathVariable("id") Long id)
+    {
+        return R.ok(productService.getProductDetails(id));
+    }
+
+    @Operation(summary = "获取商品sku规则详细信息")
+    @InnerAuth
+    @GetMapping(value = "/getSkuSpecValue/{id}")
+    public R<Map<String, Long>> getSkuSpecValue(@PathVariable("id") Long id)
+    {
+        return R.ok(productService.getSkuSpecValue(id));
+    }
+
+    @Operation(summary = "获取商品sku库存信息")
+    @InnerAuth
+    @GetMapping(value = "/getSkuStock/{skuId}")
+    public R<SkuStockVo> getSkuStock(@PathVariable("skuId") Long skuId)
+    {
+        return R.ok(productService.getSkuStock(skuId));
+    }
 }

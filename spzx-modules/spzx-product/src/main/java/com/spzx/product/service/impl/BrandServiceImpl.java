@@ -1,11 +1,10 @@
 package com.spzx.product.service.impl;
 
 
-import com.spzx.product.domain.Brand;
+import com.spzx.product.api.domain.Brand;
 import com.spzx.product.mapper.BrandMapper;
 import com.spzx.product.service.BrandService;
 import jakarta.annotation.Resource;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

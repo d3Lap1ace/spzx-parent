@@ -31,6 +31,11 @@ public class RemoteCategoryFallbackFactory implements FallbackFactory<RemoteCate
             public R<List<CategoryVo>> getOneCategory(String source) {
                 return R.fail("获取全部一级分类失败:" + throwable.getMessage());
             }
+
+            @Override
+            public R<List<CategoryVo>> tree(String source) {
+                return R.fail("获取全部一级分类失败:" + throwable.getMessage());
+            }
         };
     }
 }

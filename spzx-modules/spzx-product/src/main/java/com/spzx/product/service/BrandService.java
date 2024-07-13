@@ -1,6 +1,6 @@
 package com.spzx.product.service;
 
-import com.spzx.product.domain.Brand;
+import com.spzx.product.api.domain.Brand;
 
 import java.util.List;
 
