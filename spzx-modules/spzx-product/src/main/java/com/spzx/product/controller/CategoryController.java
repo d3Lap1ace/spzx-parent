@@ -76,4 +76,10 @@ public class CategoryController {
     public R<List<CategoryVo>> getTree() {
         return R.ok(categoryService.tree());
     }
+
+    @InnerAuth
+    @GetMapping(value = "/tree")
+    public R<List<CategoryVo>> tree(){
+        return R.ok(categoryService.tree());
+    }
 }

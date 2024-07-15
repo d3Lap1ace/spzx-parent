@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * @classname spzx-parent
  * @Auther d3Lap1ace
- * @Time 13/7/2024 18:20 周六
+ * @Time 13/7/2024 14:26 周六
  * @description
  * @Version 1.0
  * From the Laplace Demon
@@ -25,10 +25,12 @@ public class CategoryServiceImpl implements ICategoryService {
 
     @Autowired
     private RemoteCategoryService remoteCategoryService;
+
+
     @Override
     public List<CategoryVo> tree() {
         R<List<CategoryVo>> categoryVoListResult = remoteCategoryService.tree(SecurityConstants.INNER);
-        if(R.FAIL == categoryVoListResult.getCode()){
+        if (R.FAIL == categoryVoListResult.getCode()) {
             throw new ServiceException(categoryVoListResult.getMsg());
         }
         return categoryVoListResult.getData();

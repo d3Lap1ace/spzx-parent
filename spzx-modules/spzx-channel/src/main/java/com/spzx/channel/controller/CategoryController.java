@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * @classname spzx-parent
  * @Auther d3Lap1ace
- * @Time 13/7/2024 18:19 周六
+ * @Time 13/7/2024 14:24 周六
  * @description
  * @Version 1.0
  * From the Laplace Demon
@@ -20,16 +20,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/category")
 public class CategoryController extends BaseController {
-
     @Autowired
     private ICategoryService categoryService;
 
-    @GetMapping("/tree")
+    @GetMapping(value = "/tree")
     public AjaxResult tree() {
         return success(categoryService.tree());
     }
-
-
-
-
 }

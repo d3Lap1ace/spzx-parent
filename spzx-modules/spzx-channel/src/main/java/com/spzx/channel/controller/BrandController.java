@@ -12,16 +12,16 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * @classname spzx-parent
  * @Auther d3Lap1ace
- * @Time 13/7/2024 18:44 周六
+ * @Time 13/7/2024 14:37 周六
  * @description
  * @Version 1.0
  * From the Laplace Demon
  */
 
+
 @RestController
 @RequestMapping("/brand")
 public class BrandController extends BaseController {
-
     @Autowired
     private IBrandService brandService;
 
@@ -30,5 +30,4 @@ public class BrandController extends BaseController {
     public AjaxResult selectBrandAll() {
         return success(brandService.getBrandAll());
     }
-
 }

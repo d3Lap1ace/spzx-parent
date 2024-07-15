@@ -84,7 +84,7 @@ public interface IProductService extends IService<Product> {
 
     List<ProductSku> selectProductSkuList(SkuQuery skuQuery);
 
-    
+
     ProductSku getProductSku(Long skuId);
 
     Product getProduct(Long id);
