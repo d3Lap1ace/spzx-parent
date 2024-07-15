@@ -16,6 +16,7 @@ import com.spzx.product.api.domain.vo.SkuStockVo;
 import com.spzx.product.domain.Product;
 import com.spzx.product.service.IProductService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -145,8 +146,11 @@ public class ProductController extends BaseController {
     @InnerAuth
     @GetMapping("/skuList/{pageNum}/{pageSize}")
     public R<TableDataInfo> skuList(
+            @Parameter(name = "pageNum", description = "当前页码", required = true)
             @PathVariable Integer pageNum,
+            @Parameter(name = "pageSize", description = "每页记录数", required = true)
             @PathVariable Integer pageSize,
+            @Parameter(name = "productQuery", description = "查询对象", required = false)
             @ModelAttribute SkuQuery skuQuery) {
         PageHelper.startPage(pageNum, pageSize);
         List<ProductSku> list = productService.selectProductSkuList(skuQuery);

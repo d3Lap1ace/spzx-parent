@@ -36,10 +36,7 @@ public class RemoteProductFallbackFactory implements FallbackFactory<RemoteProdu
                 return R.fail("获取商品列表失败:" + throwable.getMessage());
             }
 
-            @Override
-            public R<List<ProductSku>> getSkuList(Integer pageNum, Integer pageSize, SkuQuery skuQuery, String source) {
-                return R.fail("获取商品列表失败:" + throwable.getMessage());
-            }
+
 
             @Override
             public R<TableDataInfo> skuList(Integer pageNum, Integer pageSize, SkuQuery skuQuery, String source) {

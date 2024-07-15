@@ -8,7 +8,6 @@ import com.spzx.product.api.RemoteCategoryService;
 import com.spzx.product.api.RemoteProductService;
 import com.spzx.product.api.domain.ProductSku;
 import com.spzx.product.api.domain.vo.CategoryVo;
-import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

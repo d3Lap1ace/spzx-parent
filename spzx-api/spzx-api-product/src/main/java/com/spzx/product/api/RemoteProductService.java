@@ -39,31 +39,25 @@ public interface RemoteProductService {
     R<List<ProductSku>> getTopSale(@RequestHeader(SecurityConstants.FROM_SOURCE)String source);
 
     @GetMapping("/product/skuList/{pageNum}/{pageSize}")
-    R<List<ProductSku>> getSkuList(@PathVariable Integer pageNum,
-                                   @PathVariable Integer pageSize,
-                                   @SpringQueryMap SkuQuery skuQuery,
-                                   @RequestHeader(SecurityConstants.FROM_SOURCE) String source);
-
-    @GetMapping("/product/skuList/{pageNum}/{pageSize}")
-    R<TableDataInfo> skuList(Integer pageNum, Integer pageSize, SkuQuery skuQuery, String source);
+    R<TableDataInfo> skuList(@PathVariable("pageNum") Integer pageNum, @PathVariable("pageSize") Integer pageSize, @SpringQueryMap SkuQuery skuQuery, @RequestHeader(SecurityConstants.FROM_SOURCE) String source);
 
 
     @GetMapping("/product/getProductSku/{skuId}")
     public R<ProductSku> getProductSku(@PathVariable("skuId") Long skuId, @RequestHeader(SecurityConstants.FROM_SOURCE) String source);
 
-    @GetMapping(value = "/product/getProduct/{id}")
+    @GetMapping("/product/getProduct/{id}")
     public R<Product> getProduct(@PathVariable("id") Long id, @RequestHeader(SecurityConstants.FROM_SOURCE) String source);
 
-    @GetMapping(value = "/product/getSkuPrice/{skuId}")
+    @GetMapping( "/product/getSkuPrice/{skuId}")
     public R<SkuPrice> getSkuPrice(@PathVariable("skuId") Long skuId, @RequestHeader(SecurityConstants.FROM_SOURCE) String source);
 
-    @GetMapping(value = "/product/getProductDetails/{id}")
+    @GetMapping( "/product/getProductDetails/{id}")
     public R<ProductDetails> getProductDetails(@PathVariable("id") Long id, @RequestHeader(SecurityConstants.FROM_SOURCE) String source);
 
-    @GetMapping(value = "/product/getSkuSpecValue/{id}")
+    @GetMapping("/product/getSkuSpecValue/{id}")
     public R<Map<String, Long>> getSkuSpecValue(@PathVariable("id") Long id, @RequestHeader(SecurityConstants.FROM_SOURCE) String source);
 
-    @GetMapping(value = "/product/getSkuStock/{skuId}")
+    @GetMapping("/product/getSkuStock/{skuId}")
     public R<SkuStockVo> getSkuStock(@PathVariable("skuId") Long skuId, @RequestHeader(SecurityConstants.FROM_SOURCE) String source);
 
 }
