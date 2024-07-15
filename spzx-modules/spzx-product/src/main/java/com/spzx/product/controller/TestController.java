@@ -17,7 +17,7 @@ public class TestController {
     @Autowired
     private TestService testService;
 
-    @GetMapping("testLock")
+    @GetMapping("/testLock")
     public AjaxResult testLock() {
         testService.testLock();
         return AjaxResult.success();
