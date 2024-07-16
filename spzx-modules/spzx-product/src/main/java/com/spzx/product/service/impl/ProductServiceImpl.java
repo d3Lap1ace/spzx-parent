@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.spzx.common.core.utils.bean.BeanUtils;
+import com.spzx.common.core.utils.uuid.UUID;
 import com.spzx.product.api.domain.ProductDetails;
 import com.spzx.product.api.domain.ProductSku;
 import com.spzx.product.api.domain.SkuPrice;
@@ -17,6 +18,12 @@ import com.spzx.product.mapper.ProductSkuMapper;
 import com.spzx.product.mapper.SkuStockMapper;
 import com.spzx.product.service.IProductService;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -25,6 +32,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -36,6 +44,7 @@ import java.util.stream.Collectors;
  * From the Laplace Demon
  */
 
+@Slf4j
 @Service
 public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> implements IProductService {
 
@@ -45,6 +54,10 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     private ProductDetailsMapper productDetailsMapper;
     @Resource
     private SkuStockMapper skuStockMapper;
+    @Autowired
+    private RedisTemplate redisTemplate;
+    @Autowired
+    private RedissonClient redissonClient;
 
     @Override
     public IPage<Product> pageProductQuery(Page<Product> productPage, Product product) {
@@ -204,8 +217,114 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         return productSkuMapper.selectProductSkuList(skuQuery);
     }
 
+    /**
+     * aop+redis分布式锁
+     * @param skuId
+     * @return
+     */
     @Override
     public ProductSku getProductSku(Long skuId) {
+        // 根据skuid  从redis中查询缓存
+        String dataKey = "product:sku:"+skuId;
+        ProductSku productSku  = (ProductSku)redisTemplate.opsForValue().get(dataKey);
+        // 命中缓存 直接返回
+        if(productSku!=null) {
+            log.info("命中缓存,直接返回,线程ID:{}",Thread.currentThread().getName());
+            return productSku;
+        }
+        // 缓存没有 从mysql中查找
+        // 添加分布式锁
+        RLock lock = redissonClient.getLock("product:sku:"+skuId);
+        // 加入分布式锁
+        try {
+            boolean flag = lock.tryLock(5, 10, TimeUnit.SECONDS);
+            if(flag){
+                try {
+                    // 执行业务逻辑 并把查找出来的数据放到redis里面
+                    ProductSku productSkuFromDB = this.getProductSkuFromDB(skuId);
+                    redisTemplate.opsForValue().set("datakey",productSkuFromDB,10,TimeUnit.SECONDS);
+                    return productSkuFromDB;
+                } finally {
+                    lock.unlock();
+                }
+            }else {
+                // 获取锁失败 进行自旋
+                try {
+                    Thread.sleep(200);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                return this.getProductSku(skuId);
+            }
+
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * redis分布式锁
+     * @param skuId
+     * @return
+     */
+    public ProductSku getProductSku1(Long skuId) {
+        try {
+            //1.优先从缓存中获取数据
+            //1.1 构建业务数据Key 形式：前缀+业务唯一标识
+            String datakey = "product:sku:"+skuId;
+            //1.2 查询Redis获取业务数据
+            ProductSku productSku = (ProductSku) redisTemplate.opsForValue().get(datakey);
+            //1.3 命中缓存则直接返回
+            if(productSku != null){
+                log.info("命中缓存，直接返回，线程ID：{}，线程名称：{}",Thread.currentThread().getName());
+                return productSku;
+            }
+            //2.尝试获取分布式锁（set k v ex nx可能获取锁失败）
+            //2.1 构建锁key
+            String lockKey = "product:sku:lock:" + skuId;
+            //2.2 采用UUID作为线程标识
+            String uuid = UUID.randomUUID().toString().replace("-","");
+            //2.3 利用Redis提供set nx ex 获取分布式锁
+            Boolean flag = redisTemplate.opsForValue().setIfAbsent(lockKey, uuid, 5, TimeUnit.SECONDS);
+            if(flag){
+                //3.获取锁成功执行业务,将查询业务数据放入缓存Redis
+                try {
+                    log.info("获取锁成功：{}，线程名称：{}", Thread.currentThread().getId(), Thread.currentThread().getName());
+                    productSku = this.getProductSkuFromDB(skuId);
+                    return productSku;
+                } finally {
+                    //4.业务执行完毕释放锁
+                    String scriptText = "if redis.call(\"get\",KEYS[1]) == ARGV[1]\n" +
+                            "then\n" +
+                            "    return redis.call(\"del\",KEYS[1])\n" +
+                            "else\n" +
+                            "    return 0\n" +
+                            "end";
+                    DefaultRedisScript<Long> script = new DefaultRedisScript<>();
+                    script.setScriptText(scriptText);
+                    script.setResultType(Long.class);
+                    redisTemplate.execute(script,Arrays.asList(lockKey),uuid);
+                }
+            }else {
+                //5.获取锁失败则自旋（业务要求必须执行）
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                log.error("获取锁失败，自旋：{}，线程名称：{}", Thread.currentThread().getId(), Thread.currentThread().getName());
+                return this.getProductSku(skuId);
+            }
+        } catch (RuntimeException e) {
+            //兜底处理方案：Redis服务有问题，将业务数据获取自动从数据库获取
+            log.error("[商品服务]查询商品信息异常：{}", e);
+            return this.getProductSkuFromDB(skuId);
+        }
+    }
+
+
+
+    public ProductSku getProductSkuFromDB(Long skuId) {
         return productSkuMapper.selectById(skuId);
     }
 
