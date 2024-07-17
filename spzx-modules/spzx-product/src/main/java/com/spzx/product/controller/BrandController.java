@@ -69,7 +69,7 @@ public class BrandController extends BaseController {
     @RequiresPermissions("product:brand:add")
     @Log(title = "品牌管理", businessType = BusinessType.INSERT)
     @PostMapping
-    public AjaxResult insertBrand(@RequestBody Brand brand){
+    public  AjaxResult insertBrand(@RequestBody Brand brand){
         return success(brandService.insertBrand(brand));
     }
 

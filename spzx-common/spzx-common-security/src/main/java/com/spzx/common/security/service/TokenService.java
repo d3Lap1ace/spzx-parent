@@ -171,4 +171,13 @@ public class TokenService
     {
         return ACCESS_TOKEN + token;
     }
+
+    /**
+     * 生成token
+     * @param userInfo
+     * @return
+     */
+    public Object careteToken(LoginUser userInfo) {
+        return null;
+    }
 }

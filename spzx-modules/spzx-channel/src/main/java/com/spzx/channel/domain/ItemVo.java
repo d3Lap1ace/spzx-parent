@@ -1,12 +1,13 @@
 package com.spzx.channel.domain;
 
 import com.alibaba.fastjson.JSONArray;
+import com.spzx.product.api.domain.Product;
 import com.spzx.product.api.domain.ProductSku;
 import com.spzx.product.api.domain.SkuPrice;
 import com.spzx.product.api.domain.vo.SkuStockVo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
-import org.apache.commons.math3.stat.descriptive.summary.Product;
+
 
 import java.util.List;
 import java.util.Map;

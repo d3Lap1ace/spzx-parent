@@ -7,12 +7,9 @@ import com.spzx.common.core.domain.R;
 import com.spzx.common.core.web.page.TableDataInfo;
 import com.spzx.product.api.RemoteProductService;
 
-import com.spzx.product.api.domain.ProductDetails;
-import com.spzx.product.api.domain.ProductSku;
-import com.spzx.product.api.domain.SkuPrice;
-import com.spzx.product.api.domain.SkuQuery;
+import com.spzx.product.api.domain.*;
 import com.spzx.product.api.domain.vo.SkuStockVo;
-import org.apache.commons.math3.stat.descriptive.summary.Product;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cloud.openfeign.FallbackFactory;

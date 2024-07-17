@@ -1,11 +1,12 @@
-package com.spzx.user.domain;
+package com.spzx.user.api.domain;
 
-import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
 import com.spzx.common.core.annotation.Excel;
 import com.spzx.common.core.web.domain.BaseEntity;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+
+import java.util.Date;
 
 /**
  * 会员对象 user_info
@@ -78,6 +79,6 @@ public class UserInfo extends BaseEntity
     /** 状态：1为正常，0为禁止 */
     @Excel(name = "状态：1为正常，0为禁止")
     @Schema(description = "状态：1为正常，0为禁止")
-    private Long status;
+    private Integer status;
 
 }
