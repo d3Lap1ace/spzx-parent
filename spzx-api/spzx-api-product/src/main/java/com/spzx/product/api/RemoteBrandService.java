@@ -24,6 +24,6 @@ import java.util.List;
         fallbackFactory = RemoteBrandFallbackFactory.class)
 public interface RemoteBrandService {
     @GetMapping("/brand/getBrandAllList")
-    public R<List<Brand>> getBrandAllList(@RequestHeader(SecurityConstants.FROM_SOURCE) String source);
+    R<List<Brand>> getBrandAllList(@RequestHeader(SecurityConstants.FROM_SOURCE) String source);
 }
 

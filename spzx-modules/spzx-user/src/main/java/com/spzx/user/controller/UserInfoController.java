@@ -3,11 +3,16 @@ package com.spzx.user.controller;
 import java.util.List;
 import java.util.Arrays;
 
+import com.spzx.common.core.context.SecurityContextHolder;
 import com.spzx.common.core.domain.R;
 import com.spzx.common.security.annotation.InnerAuth;
+import com.spzx.common.security.annotation.RequiresLogin;
 import com.spzx.user.api.domain.UpdateUserLogin;
 import com.spzx.user.api.domain.UserInfo;
+import com.spzx.user.domain.UserInfoVo;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -116,6 +121,7 @@ public class UserInfoController extends BaseController
         return toAjax(userInfoService.removeBatchByIds(Arrays.asList(ids)));
     }
 
+    @Operation(summary = "用户注册")
     @InnerAuth
     @PostMapping("/register")
     public R<Boolean> register(@RequestBody UserInfo userInfo){
@@ -127,7 +133,7 @@ public class UserInfoController extends BaseController
     @GetMapping("/info/{username}")
     public R<UserInfo> getUserInfo(@PathVariable("username") String username){
         UserInfo userInfo = userInfoService.selectUserByUserName(username);
-        return R.ok();
+        return R.ok(userInfo);
     }
 
     @Operation(summary = "根据用户登录信息")
@@ -135,5 +141,16 @@ public class UserInfoController extends BaseController
     @PutMapping("/updateUserLogin")
     public R<Boolean> updateUserLogin(@RequestBody UpdateUserLogin updateUserLogin){
         return R.ok(userInfoService.updateUserLogin(updateUserLogin));
+    }
+
+    @Operation(summary = "获取当前登录用户信息")
+    @RequiresLogin
+    @GetMapping("/getLoginUserInfo")
+    public AjaxResult gerLoginUserInfo(HttpServletRequest request){
+        Long userId = SecurityContextHolder.getUserId();
+        UserInfo userInfo = userInfoService.getById(userId);
+        UserInfoVo userInfoVo = new UserInfoVo();
+        BeanUtils.copyProperties(userInfo,userInfoVo);
+        return success(userInfoVo);
     }
 }

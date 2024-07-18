@@ -20,7 +20,7 @@ import java.util.List;
  */
 
 @Component
-public class RemoteBrandFallbackFactory implements FallbackFactory {
+public class RemoteBrandFallbackFactory implements FallbackFactory<RemoteBrandService> {
     private static final Logger log = LoggerFactory.getLogger(RemoteBrandFallbackFactory.class);
 
 

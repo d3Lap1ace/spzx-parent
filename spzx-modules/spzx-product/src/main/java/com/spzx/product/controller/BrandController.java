@@ -1,5 +1,6 @@
 package com.spzx.product.controller;
 
+import com.spzx.common.core.domain.R;
 import com.spzx.common.core.web.controller.BaseController;
 import com.spzx.common.core.web.domain.AjaxResult;
 import com.spzx.common.core.web.page.TableDataInfo;
@@ -105,12 +106,20 @@ public class BrandController extends BaseController {
      * 获取全部品牌
      * @return
      */
-    @InnerAuth
+
     @Operation(summary = "获取全部品牌")
     @RequiresPermissions("product:brand:query")
     @GetMapping("/getBrandAll")
     public AjaxResult getAllBrand(){
         return success(brandService.getAllBrand());
+    }
+
+
+    @InnerAuth
+    @Operation(summary = "获取全部品牌")
+    @GetMapping("/getBrandAllList")
+    public R<List> getAllBrandList(){
+        return R.ok(brandService.getAllBrand());
     }
 
 }

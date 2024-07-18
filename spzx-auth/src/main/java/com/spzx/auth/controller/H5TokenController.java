@@ -47,7 +47,7 @@ public class H5TokenController {
     @PostMapping("/h5/login")
     public R<?> login(@RequestBody LoginBody loginBody){
         LoginUser userInfo = h5LoginService.login(loginBody.getUsername(),loginBody.getPassword());
-        return R.ok(tokenService.careteToken(userInfo));
+        return R.ok(tokenService.createToken(userInfo));
     }
 
     @DeleteMapping("/h5/logout")

@@ -4,11 +4,10 @@ import com.spzx.common.core.web.controller.BaseController;
 import com.spzx.common.core.web.domain.AjaxResult;
 import com.spzx.user.service.ISmsService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,20 +34,20 @@ public class SmsController extends BaseController {
     private ISmsService smsService;
 
     @Autowired
-    private RedisTemplate redisTemplate;
+    private StringRedisTemplate redisTemplate;
 
     @Operation(summary = "获取手机验证码")
     @GetMapping("/sendCode/{phone}")
     public AjaxResult sendcode(@PathVariable("phone") String phone){
 
         // 根据手机号查询redis 如果有 则直接返回
-        String recode = (String) redisTemplate.opsForValue().get("code:" + phone);
+        String recode = redisTemplate.opsForValue().get("phone:code:" + phone);
         if(StringUtils.hasText(recode)){
             return success();
         }
 
         // 生成验证码格式
-        String code = new DecimalFormat("00000").format(new Random().nextInt(10000));
+        String code = new DecimalFormat("0000").format(new Random().nextInt(10000));
 
         // 存入hashMap 作为验证
         HashMap<String, String> map = new HashMap<>();
@@ -59,7 +58,7 @@ public class SmsController extends BaseController {
 
         // 存入redis
         if(flag){
-            redisTemplate.opsForValue().set("code:",code,5, TimeUnit.MINUTES);
+            redisTemplate.opsForValue().set("phone:code:"+phone,code,5, TimeUnit.MINUTES);
         }
         return success();
     }

@@ -23,14 +23,12 @@ public class CategoryUtils {
      */
     public static List<CategoryVo> buildTree (List<CategoryVo> categoryVoList){
 
-        ArrayList<CategoryVo> tree = new ArrayList<>();
+        List<CategoryVo> tree = new ArrayList<>();
         categoryVoList.forEach(categoryVo -> {
-            if(categoryVo.getParentId() == 0){
+            if(categoryVo.getParentId().longValue() == 0){
                 tree.add(findChildren(categoryVo,categoryVoList));
             }
         });
-
-
         return tree;
     }
 
@@ -41,9 +39,13 @@ public class CategoryUtils {
         //遍历所有分类集合 categoryVoList
         categoryVo.setChildren(new ArrayList<CategoryVo>());
         categoryVoList.forEach(cvo->{
-            if(cvo.getParentId() == categoryVo.getId() && categoryVo.getChildren() == null)
-                categoryVo.setChildren(new ArrayList<CategoryVo>());
-            categoryVo.getChildren().add(findChildren(cvo,categoryVoList));
+            if(cvo.getParentId().longValue() == categoryVo.getId().longValue()) {
+                if (categoryVo.getChildren() == null) {
+                    categoryVo.setChildren(new ArrayList<>());
+                }
+                categoryVo.getChildren().add(findChildren(cvo,categoryVoList));
+            }
+
         });
         return categoryVo;
     }

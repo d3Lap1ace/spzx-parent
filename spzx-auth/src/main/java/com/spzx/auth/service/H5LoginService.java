@@ -6,6 +6,7 @@ import com.spzx.common.core.constant.Constants;
 import com.spzx.common.core.constant.SecurityConstants;
 import com.spzx.common.core.constant.UserConstants;
 import com.spzx.common.core.domain.R;
+import com.spzx.common.core.enums.UserStatus;
 import com.spzx.common.core.exception.ServiceException;
 import com.spzx.common.core.text.Convert;
 import com.spzx.common.core.utils.ip.IpUtils;
@@ -76,7 +77,7 @@ public class H5LoginService {
         nickName = StringUtils.isBlank(nickName) ? username : nickName;
         userInfo.setNickName(nickName);
         userInfo.setPassword(SecurityUtils.encryptPassword(password));
-        userInfo.setPassword(password);
+
 
         R<?> registerResult = remoteUserInfoService.register(userInfo, SecurityConstants.INNER);
 
@@ -125,6 +126,12 @@ public class H5LoginService {
         UserInfo userInfo = userResult.getData();
         if(userInfo == null) throw new ServiceException("登录用户：" + username + " 不存在");
 
+        if (R.FAIL == userResult.getCode())
+        {
+            throw new ServiceException(userResult.getMsg());
+        }
+
+
         LoginUser loginUser = new LoginUser();
         loginUser.setUserid(userInfo.getId());
         loginUser.setUsername(userInfo.getUsername());
@@ -132,7 +139,13 @@ public class H5LoginService {
         loginUser.setStatus(userInfo.getStatus()+"");
 
 
+        if (UserStatus.DISABLE.getCode().equals(userInfo.getStatus()))
+        {
+            recordLogService.recordLogininfor(username, Constants.LOGIN_FAIL, "用户已停用，请联系管理员");
+            throw new ServiceException("对不起，您的账号：" + username + " 已停用");
+        }
         passwordService.validate(loginUser, password);
+        recordLogService.recordLogininfor(username, Constants.LOGIN_SUCCESS, "登录成功");
 
         //更新登录信息
         UpdateUserLogin updateUserLogin = new UpdateUserLogin();

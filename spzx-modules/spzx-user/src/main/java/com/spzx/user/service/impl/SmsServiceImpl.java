@@ -34,7 +34,7 @@ public class SmsServiceImpl implements ISmsService {
         Map<String, String> querys = new HashMap<String, String>();
         String code = map.get("code");
         querys.put("mobile", phone);
-        querys.put("param", "**code**:"+code+",**minute**:5");
+        querys.put("param", "**code**:"+code);
 
 //smsSignId（短信前缀）和templateId（短信模板），可登录国阳云控制台自助申请。参考文档：http://help.guoyangyun.com/Problem/Qm.html
 

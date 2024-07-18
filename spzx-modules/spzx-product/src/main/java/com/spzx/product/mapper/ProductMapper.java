@@ -1,7 +1,7 @@
 package com.spzx.product.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.spzx.product.domain.Product;
+import com.spzx.product.api.domain.Product;
 
 /**
  * @classname spzx-parent

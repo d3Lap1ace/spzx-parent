@@ -1,12 +1,18 @@
 package com.spzx.channel.controller;
 
 import com.spzx.channel.service.ICategoryService;
+import com.spzx.common.core.constant.SecurityConstants;
+import com.spzx.common.core.domain.R;
 import com.spzx.common.core.web.controller.BaseController;
 import com.spzx.common.core.web.domain.AjaxResult;
+import com.spzx.product.api.domain.vo.CategoryVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /**
  * @classname spzx-parent
@@ -27,4 +33,6 @@ public class CategoryController extends BaseController {
     public AjaxResult tree() {
         return success(categoryService.tree());
     }
+
+
 }

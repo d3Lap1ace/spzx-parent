@@ -8,12 +8,8 @@ import com.spzx.common.core.web.controller.BaseController;
 import com.spzx.common.core.web.domain.AjaxResult;
 import com.spzx.common.core.web.page.TableDataInfo;
 import com.spzx.common.security.annotation.InnerAuth;
-import com.spzx.product.api.domain.ProductDetails;
-import com.spzx.product.api.domain.ProductSku;
-import com.spzx.product.api.domain.SkuPrice;
-import com.spzx.product.api.domain.SkuQuery;
+import com.spzx.product.api.domain.*;
 import com.spzx.product.api.domain.vo.SkuStockVo;
-import com.spzx.product.domain.Product;
 import com.spzx.product.service.IProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -204,4 +200,5 @@ public class ProductController extends BaseController {
     {
         return R.ok(productService.getSkuStock(skuId));
     }
+
 }

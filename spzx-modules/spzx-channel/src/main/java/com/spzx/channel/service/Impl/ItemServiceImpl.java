@@ -51,7 +51,7 @@ public class ItemServiceImpl implements IItemService {
     public ItemVo item(Long skuId) {
         //远程调用商品微服务接口之前 提前知道用户访问商品SKUID是否存在与布隆过滤器
         RBloomFilter<Object> bloomFilter = redissonClient.getBloomFilter("sku:bloom:filter");
-        if (!bloomFilter.contains(skuId)) {
+        if(!bloomFilter.contains(skuId)){
             log.error("用户查询商品sku不存在：{}", skuId);
             //查询数据不存在直接返回空对象
             throw new ServiceException("用户查询商品sku不存在");
