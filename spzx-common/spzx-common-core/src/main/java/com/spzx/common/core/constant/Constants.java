@@ -120,7 +120,7 @@ public class Constants
     /**
      * 自动识别json对象白名单配置（仅允许解析的包名，范围越小越安全）
      */
-    public static final String[] JSON_WHITELIST_STR = { "org.springframework", "com.spzx" };
+    public static final String[] JSON_WHITELIST_STR = { "org.springframework", "com.spzx", "java.util" };
 
     /**
      * 定时任务白名单配置（仅允许访问的包名，如其他需要可以自行添加）
@@ -132,4 +132,6 @@ public class Constants
      */
     public static final String[] JOB_ERROR_STR = { "java.net.URL", "javax.naming.InitialContext", "org.yaml.snakeyaml",
             "org.springframework", "org.apache", "com.spzx.common.core.utils.file" };
+
+
 }

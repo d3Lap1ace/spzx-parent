@@ -1,28 +1,23 @@
 package com.spzx.user.controller;
 
-import java.util.List;
-import java.util.Arrays;
-import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import com.spzx.common.log.annotation.Log;
-import com.spzx.common.log.enums.BusinessType;
-import com.spzx.common.security.annotation.RequiresPermissions;
-import com.spzx.user.domain.UserAddress;
-import com.spzx.user.service.IUserAddressService;
+import com.spzx.common.core.domain.R;
+import com.spzx.common.core.utils.poi.ExcelUtil;
 import com.spzx.common.core.web.controller.BaseController;
 import com.spzx.common.core.web.domain.AjaxResult;
-import com.spzx.common.core.utils.poi.ExcelUtil;
+import com.spzx.common.log.annotation.Log;
+import com.spzx.common.log.enums.BusinessType;
+import com.spzx.common.security.annotation.InnerAuth;
+import com.spzx.common.security.annotation.RequiresLogin;
+import com.spzx.common.security.annotation.RequiresPermissions;
+import com.spzx.user.api.domain.UserAddress;
+import com.spzx.user.service.IUserAddressService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import com.spzx.common.core.web.page.TableDataInfo;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * 用户地址Controller
@@ -42,14 +37,25 @@ public class UserAddressController extends BaseController
      * 查询用户地址列表
      */
     @Operation(summary = "查询用户地址列表")
-    @RequiresPermissions("user:userAddress:list")
+    @RequiresLogin
     @GetMapping("/list")
-    public TableDataInfo list(UserAddress userAddress)
-    {
-        startPage();
-        List<UserAddress> list = userAddressService.selectUserAddressList(userAddress);
-        return getDataTable(list);
+    public AjaxResult list() {
+        List<UserAddress> list = userAddressService.selectUserAddressList();
+        return success(list);
     }
+
+    /**
+     * 查询用户地址列表
+     */
+//    @Operation(summary = "查询用户地址列表")
+//    @RequiresPermissions("user:userAddress:list")
+//    @GetMapping("/list")
+//    public TableDataInfo list(UserAddress userAddress)
+//    {
+//        startPage();
+//        List<UserAddress> list = userAddressService.selectUserAddressList(userAddress);
+//        return getDataTable(list);
+//    }
 
     /**
      * 导出用户地址列表
@@ -85,7 +91,8 @@ public class UserAddressController extends BaseController
     @PostMapping
     public AjaxResult add(@RequestBody UserAddress userAddress)
     {
-        return toAjax(userAddressService.save(userAddress));
+
+        return toAjax(userAddressService.insertUserAddress(userAddress));
     }
 
     /**
@@ -97,7 +104,7 @@ public class UserAddressController extends BaseController
     @PutMapping
     public AjaxResult edit(@RequestBody UserAddress userAddress)
     {
-        return toAjax(userAddressService.updateById(userAddress));
+        return toAjax(userAddressService.updateUserAddress(userAddress));
     }
 
     /**
@@ -109,6 +116,13 @@ public class UserAddressController extends BaseController
 	@DeleteMapping("/{ids}")
     public AjaxResult remove(@PathVariable Long[] ids)
     {
-        return toAjax(userAddressService.removeBatchByIds(Arrays.asList(ids)));
+        return toAjax(userAddressService.removeById(ids));
+    }
+
+    @InnerAuth
+    @GetMapping(value = "/getUserAddress/{id}")
+    public R<UserAddress> getUserAddress(@PathVariable("id") Long id)
+    {
+        return R.ok(userAddressService.getById(id));
     }
 }

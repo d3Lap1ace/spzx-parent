@@ -26,7 +26,7 @@ public interface IProductService extends IService<Product> {
      * @param product
      * @return
      */
-    IPage<Product> pageProductQuery(Page<Product> productPage, Product product);
+    IPage<Product> selectProductList(Page<Product> productPage, Product product);
 
     /**
      * 新增商品
@@ -92,4 +92,6 @@ public interface IProductService extends IService<Product> {
     Map<String, Long> getSkuSpecValue(Long id);
 
     SkuStockVo getSkuStock(Long skuId);
+
+    List<SkuPrice> getSkuPriceList(List<Long> skuIdList);
 }

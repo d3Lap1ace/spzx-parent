@@ -1,8 +1,11 @@
 package com.spzx.order.service;
 
-import java.util.List;
-import com.spzx.order.domain.OrderInfo;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.spzx.order.domain.OrderForm;
+import com.spzx.order.domain.OrderInfo;
+import com.spzx.order.domain.TradeVo;
+
+import java.util.List;
 
 /**
  * 订单Service接口
@@ -21,4 +24,7 @@ public interface IOrderInfoService extends IService<OrderInfo>
      */
     public List<OrderInfo> selectOrderInfoList(OrderInfo orderInfo);
 
+    TradeVo orderTradeData();
+
+    Long submitOrder(OrderForm orderForm);
 }

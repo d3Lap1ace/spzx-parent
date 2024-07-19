@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.spzx.common.core.utils.bean.BeanUtils;
 import com.spzx.common.core.utils.uuid.UUID;
+import com.spzx.common.redis.cache.RedisCache;
 import com.spzx.product.api.domain.*;
 import com.spzx.product.api.domain.vo.SkuStockVo;
 import com.spzx.product.domain.*;
@@ -16,6 +17,7 @@ import com.spzx.product.mapper.SkuStockMapper;
 import com.spzx.product.service.IProductService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RBloomFilter;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,8 +58,9 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     @Autowired
     private RedissonClient redissonClient;
 
+
     @Override
-    public IPage<Product> pageProductQuery(Page<Product> productPage, Product product) {
+    public IPage<Product> selectProductList(Page<Product> productPage, Product product) {
         LambdaQueryWrapper<Product> productLambdaQueryWrapper = new LambdaQueryWrapper<>();
         if(StringUtils.hasText(product.getName())) productLambdaQueryWrapper.eq(Product::getName,product.getName());
         if(product.getBrandId()!=null) productLambdaQueryWrapper.eq(Product::getBrandId,product.getBrandId());
@@ -198,6 +201,13 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         product.setId(id);
         if(status == 1) {
             product.setStatus(1);
+
+            //sku加入布隆过滤器
+            RBloomFilter<Object> bloomFilter = redissonClient.getBloomFilter("sku:bloom:filter");
+            List<ProductSku> productSkuList = productSkuMapper.selectList(new LambdaQueryWrapper<ProductSku>().eq(ProductSku::getProductId, id));
+            productSkuList.forEach(item -> {
+                bloomFilter.add(item.getId());
+            });
         } else {
             product.setStatus(-1);
         }
@@ -325,6 +335,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         return productSkuMapper.selectById(skuId);
     }
 
+    @RedisCache(prefix = "product:")
     @Override
     public Product getProduct(Long id) {
         return baseMapper.selectById(id);
@@ -341,11 +352,13 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         return skuPrice;
     }
 
+    @RedisCache(prefix = "productDetails:")
     @Override
     public ProductDetails getProductDetails(Long id) {
         return productDetailsMapper.selectOne(new LambdaQueryWrapper<ProductDetails>().eq(ProductDetails::getProductId, id));
     }
 
+    @RedisCache(prefix = "skuSpecValue:")
     @Override
     public Map<String, Long> getSkuSpecValue(Long id) {
         List<ProductSku> productSkuList = productSkuMapper.selectList(new LambdaQueryWrapper<ProductSku>().eq(ProductSku::getProductId, id).select(ProductSku::getId, ProductSku::getSkuSpec));
@@ -362,5 +375,16 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         SkuStockVo skuStockVo = new SkuStockVo();
         BeanUtils.copyProperties(skuStock, skuStockVo);
         return skuStockVo;
+    }
+
+    @Override
+    public List<SkuPrice> getSkuPriceList(List<Long> skuIdList) {
+        List<ProductSku> productSkuList = productSkuMapper.selectList(new LambdaQueryWrapper<ProductSku>().in(ProductSku::getId, skuIdList).select(ProductSku::getSalePrice, ProductSku::getId, ProductSku::getSalePrice));
+        return productSkuList.stream().map(it -> {
+            SkuPrice skuPrice = new SkuPrice();
+            skuPrice.setSkuId(it.getId());
+            skuPrice.setSalePrice(it.getSalePrice());
+            return skuPrice;
+        }).collect(Collectors.toList());
     }
 }

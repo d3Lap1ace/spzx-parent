@@ -1,9 +1,9 @@
-package com.spzx.user.domain;
+package com.spzx.user.api.domain;
 
-import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
 import com.spzx.common.core.annotation.Excel;
 import com.spzx.common.core.web.domain.BaseEntity;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
 
 /**
  * 用户地址对象 user_address

@@ -23,13 +23,13 @@ public class CategoryUtils {
      */
     public static List<CategoryVo> buildTree (List<CategoryVo> categoryVoList){
 
-        List<CategoryVo> tree = new ArrayList<>();
+        List<CategoryVo> trees = new ArrayList<>();
         categoryVoList.forEach(categoryVo -> {
             if(categoryVo.getParentId().longValue() == 0){
-                tree.add(findChildren(categoryVo,categoryVoList));
+                trees.add(findChildren(categoryVo,categoryVoList));
             }
         });
-        return tree;
+        return trees;
     }
 
     // 目前方法里面 categoryVo代表第一层分类数据

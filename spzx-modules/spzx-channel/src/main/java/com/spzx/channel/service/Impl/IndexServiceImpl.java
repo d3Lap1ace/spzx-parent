@@ -50,8 +50,8 @@ public class IndexServiceImpl implements IIndexService {
 
         // 声明hashmap 并放入对象 返回
         HashMap<String, Object> map = new HashMap<>();
-        map.put("categoryResultMsg",categoryResultMsg);
-        map.put("topSaleResultMsg",topSaleResultMsg);
+        map.put("categoryList",categoryResultMsg.getData());
+        map.put("productSkuList",topSaleResultMsg.getData());
         return map;
     }
 }

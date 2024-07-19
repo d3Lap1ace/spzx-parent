@@ -12,4 +12,5 @@ import com.spzx.product.api.domain.Product;
  * From the Laplace Demon
  */
 public interface ProductMapper extends BaseMapper<Product> {
+
 }

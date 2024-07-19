@@ -2,7 +2,6 @@ package com.spzx.user.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.spzx.user.domain.Region;
-import com.spzx.user.domain.UserAddress;
 
 
 import java.util.List;
@@ -18,4 +17,6 @@ import java.util.List;
  */
 public interface IRegionService extends IService<UserAddress> {
     List<Region> treeSelect(String parentCode);
+
+    String getNameByCode(String code);
 }

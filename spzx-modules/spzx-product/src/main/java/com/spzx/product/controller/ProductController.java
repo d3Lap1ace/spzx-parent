@@ -47,11 +47,11 @@ public class ProductController extends BaseController {
      */
     @Operation(summary = "分页查询商品列表")
     @GetMapping("/list")
-    public TableDataInfo pageProductQuery(@RequestParam (value = "current",defaultValue = "1",required = true)Integer current,
+    public TableDataInfo list(@RequestParam (value = "current",defaultValue = "1",required = true)Integer current,
                                           @RequestParam (value = "size",defaultValue = "5",required = true)Integer size,
                                           Product product){
         Page<Product> productPage = new Page<>(current,size);
-        IPage<Product> productList = productService.pageProductQuery(productPage,product);
+        IPage<Product> productList = productService.selectProductList(productPage,product);
         return getDataTable(productList);
     }
 
@@ -200,5 +200,14 @@ public class ProductController extends BaseController {
     {
         return R.ok(productService.getSkuStock(skuId));
     }
+
+    @Operation(summary = "批量获取商品sku最新价格信息")
+    @InnerAuth
+    @PostMapping(value = "/getSkuPriceList")
+    public R<List<SkuPrice>> getSkuPriceList(@RequestBody List<Long> skuIdList)
+    {
+        return R.ok(productService.getSkuPriceList(skuIdList));
+    }
+
 
 }
