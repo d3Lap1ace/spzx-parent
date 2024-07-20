@@ -101,9 +101,10 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
 //                    totalAmount.add(orderItem.getSkuPrice().multiply(new BigDecimal(orderItem.getSkuNum())));
 //                });
         //订单总金额
-        orderItemList.forEach(orderItem -> {
-            totalAmount.add(orderItem.getSkuPrice().multiply(new BigDecimal(orderItem.getSkuNum())));
-        });
+        //订单总金额
+        for(OrderItem orderItem : orderItemList) {
+            totalAmount = totalAmount.add(orderItem.getSkuPrice().multiply(new BigDecimal(orderItem.getSkuNum())));
+        }
 
         //渲染订单确认页面-生成用户流水号
         String tradeNo = this.generateTradeNo(userId);
@@ -135,14 +136,14 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
             throw new ServiceException("请勿重复提交订单，请尝试重试");
         }
 
-        // 判断购物项
+        // 2. 判断购物项
         List<OrderItem> orderItemList = orderForm.getOrderItemList();
         if(CollectionUtils.isEmpty(orderItemList)){
             throw new ServiceException("请求不合法");
         }
 
-        //3.订单校验
-        //3.1.获得商品id列表
+        // 3.订单校验
+        // 3.1.获得商品id列表
         List<Long> skuIdList = orderItemList.stream().map(OrderItem::getSkuId).collect(Collectors.toList());
         // 3.2 根据商品id列表 远程调用 获得商品价格列表
         R<List<SkuPrice>> skuPriceListResult = remoteProductService.getSkuPriceList(skuIdList, SecurityConstants.INNER);
