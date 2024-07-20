@@ -202,9 +202,11 @@ public class CartServiceImpl implements ICartService {
 
     @Override
     public Boolean updateCartPrice(Long userId) {
-        String cartKey = this.getCartKey(userId);
+
+        String cartKey = this.getCartKey(userId); // 获取当前用户id
         BoundHashOperations<String,String,CartInfo> hashOperations = redisTemplate.boundHashOps(cartKey);
-        List<CartInfo> cartCachInfoList = hashOperations.values();
+        List<CartInfo> cartCachInfoList = hashOperations.values(); // 获取redis里面 当前用户购物车的物品
+
         Optional.ofNullable(cartCachInfoList)
                 .orElseGet(ArrayList::new)
                 .stream()
@@ -216,6 +218,7 @@ public class CartServiceImpl implements ICartService {
                         hashOperations.put(cartInfo.getSkuId().toString(), cartInfo);
                     }
                 });
+
         return true;
     }
 

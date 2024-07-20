@@ -27,4 +27,9 @@ public interface IOrderInfoService extends IService<OrderInfo>
     TradeVo orderTradeData();
 
     Long submitOrder(OrderForm orderForm);
+
+    TradeVo buy(Long skuId);
+
+    List<OrderInfo> selectUserOrderInfoList(Integer orderStatus);
+
 }

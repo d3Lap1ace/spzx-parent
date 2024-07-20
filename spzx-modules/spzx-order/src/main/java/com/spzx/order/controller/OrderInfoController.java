@@ -1,5 +1,6 @@
 package com.spzx.order.controller;
 
+import com.github.pagehelper.PageHelper;
 import com.spzx.common.core.utils.poi.ExcelUtil;
 import com.spzx.common.core.web.controller.BaseController;
 import com.spzx.common.core.web.domain.AjaxResult;
@@ -12,6 +13,7 @@ import com.spzx.order.domain.OrderForm;
 import com.spzx.order.domain.OrderInfo;
 import com.spzx.order.service.IOrderInfoService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -122,5 +124,35 @@ public class OrderInfoController extends BaseController
         return success(orderInfoService.submitOrder(orderForm));
     }
 
+    @Operation(summary = "立即购买")
+    @RequiresLogin
+    @GetMapping("buy/{skuId}")
+    public AjaxResult buy(@PathVariable Long skuId) {
+        return success(orderInfoService.buy(skuId));
+    }
+
+    @Operation(summary = "获取订单信息")
+    @RequiresLogin
+    @GetMapping("getOrderInfo/{orderId}")
+    public AjaxResult getOrderInfo(@PathVariable Long orderId) {
+        OrderInfo orderInfo = orderInfoService.getById(orderId);
+        return success(orderInfo);
+    }
+
+    @Operation(summary = "获取用户订单分页列表")
+    @GetMapping("/userOrderInfoList/{pageNum}/{pageSize}")
+    public TableDataInfo list(
+            @Parameter(name = "pageNum", description = "当前页码", required = true)
+            @PathVariable Integer pageNum,
+
+            @Parameter(name = "pageSize", description = "每页记录数", required = true)
+            @PathVariable Integer pageSize,
+
+            @Parameter(name = "orderStatus", description = "订单状态", required = false)
+            @RequestParam(required = false, defaultValue = "") Integer orderStatus) {
+        PageHelper.startPage(pageNum, pageSize);
+        List<OrderInfo> list = orderInfoService.selectUserOrderInfoList(orderStatus);
+        return getDataTable(list);
+    }
 
 }

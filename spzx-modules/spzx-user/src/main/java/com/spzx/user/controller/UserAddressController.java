@@ -86,8 +86,7 @@ public class UserAddressController extends BaseController
      * 新增用户地址
      */
     @Operation(summary = "新增用户地址")
-    @RequiresPermissions("user:userAddress:add")
-    @Log(title = "用户地址", businessType = BusinessType.INSERT)
+    @RequiresLogin
     @PostMapping
     public AjaxResult add(@RequestBody UserAddress userAddress)
     {
@@ -119,6 +118,7 @@ public class UserAddressController extends BaseController
         return toAjax(userAddressService.removeById(ids));
     }
 
+    @Operation(summary = "获取用户地址信息")
     @InnerAuth
     @GetMapping(value = "/getUserAddress/{id}")
     public R<UserAddress> getUserAddress(@PathVariable("id") Long id)

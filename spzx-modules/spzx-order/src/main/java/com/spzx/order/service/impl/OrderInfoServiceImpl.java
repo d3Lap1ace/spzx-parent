@@ -1,5 +1,6 @@
 package com.spzx.order.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.spzx.cart.api.RemoteCartService;
 import com.spzx.cart.api.domain.CartInfo;
@@ -7,23 +8,30 @@ import com.spzx.common.core.constant.SecurityConstants;
 import com.spzx.common.core.context.SecurityContextHolder;
 import com.spzx.common.core.domain.R;
 import com.spzx.common.core.exception.ServiceException;
+import com.spzx.common.security.utils.SecurityUtils;
 import com.spzx.order.domain.OrderForm;
 import com.spzx.order.domain.OrderInfo;
 import com.spzx.order.domain.OrderItem;
 import com.spzx.order.domain.TradeVo;
 import com.spzx.order.mapper.OrderInfoMapper;
+import com.spzx.order.mapper.OrderItemMapper;
 import com.spzx.order.service.IOrderInfoService;
+import com.spzx.product.api.RemoteProductService;
+import com.spzx.product.api.domain.ProductSku;
+import com.spzx.product.api.domain.SkuPrice;
+import com.spzx.user.api.RemoteUserAddressService;
+import com.spzx.user.api.domain.UserAddress;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -43,6 +51,14 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
 
     @Autowired
     private RedisTemplate redisTemplate;
+    @Autowired
+    private RemoteProductService remoteProductService;
+
+    @Autowired
+    private RemoteUserAddressService remoteUserAddressService;
+
+    @Autowired
+    private OrderItemMapper orderItemMapper;
 
     /**
      * 查询订单列表
@@ -100,7 +116,172 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
 
     @Override
     public Long submitOrder(OrderForm orderForm) {
-        return 0L;
+        // 获取当前登录用户的id
+        Long userId = SecurityContextHolder.getUserId();
+
+        //  保证删除流水号具备原子性，使用lua脚本
+        String userTradeKey = "user:tradeNo:" + userId;
+        String scriptText = "if redis.call(\"get\",KEYS[1]) == ARGV[1]\n" +
+                "then\n" +
+                "    return redis.call(\"del\",KEYS[1])\n" +
+                "else\n" +
+                "    return 0\n" +
+                "end";
+        DefaultRedisScript<Long> redisScript = new DefaultRedisScript<>();
+        redisScript.setScriptText(scriptText);
+        redisScript.setResultType(Long.class);
+        Long flag = (Long) redisTemplate.execute(redisScript, Arrays.asList(userTradeKey),orderForm.getTradeNo());
+        if(flag == 0){
+            throw new ServiceException("请勿重复提交订单，请尝试重试");
+        }
+
+        // 判断购物项
+        List<OrderItem> orderItemList = orderForm.getOrderItemList();
+        if(CollectionUtils.isEmpty(orderItemList)){
+            throw new ServiceException("请求不合法");
+        }
+
+        //3.订单校验
+        //3.1.获得商品id列表
+        List<Long> skuIdList = orderItemList.stream().map(OrderItem::getSkuId).collect(Collectors.toList());
+        // 3.2 根据商品id列表 远程调用 获得商品价格列表
+        R<List<SkuPrice>> skuPriceListResult = remoteProductService.getSkuPriceList(skuIdList, SecurityConstants.INNER);
+        if(R.FAIL==skuPriceListResult.getCode()){
+            throw new ServiceException(skuPriceListResult.getMsg());
+        }
+        List<SkuPrice> skuPriceList = skuPriceListResult.getData();
+
+        // 3.3 把查询sku价格列表转为map集合
+        Map<Long, BigDecimal> skuIdToSalePriceMap = skuPriceList.stream().
+                collect(Collectors.toMap(SkuPrice::getSkuId, SkuPrice::getSalePrice));
+
+        //3.4 比较orderItemList价格和最新价格是否相同，如果不相同，价格变化
+        String priceCheckResult = "";
+
+        for (OrderItem orderItem : orderItemList) {
+
+            if (orderItem.getSkuPrice().compareTo(skuIdToSalePriceMap.get(orderItem.getSkuId())) != 0) {
+                priceCheckResult += orderItem.getSkuName() + "价格变化了; ";
+            }
+        }
+
+        //3.5 如果价格变化，远程调用更新购物车商品价格
+        if(StringUtils.hasText(priceCheckResult)){
+            remoteCartService.updateCartPrice(userId,SecurityConstants.INNER);
+            throw new ServiceException(priceCheckResult);
+        }
+
+        // 4 校验库存并锁定库存
+        Long orderId = this.saveOrder(orderForm);
+
+
+        //5 删除购物车选中商品
+        remoteCartService.deleteCartCheckedList(userId,SecurityConstants.INNER);
+        return orderId;
+    }
+
+    @Override
+    public TradeVo buy(Long skuId) {
+        Long userId = SecurityUtils.getUserId();
+        ProductSku productSku = remoteProductService.getProductSku(skuId, SecurityConstants.INNER).getData();
+        List<OrderItem> orderItemList = new ArrayList<>();
+        OrderItem orderItem = new OrderItem();
+        orderItem.setSkuId(skuId);
+        orderItem.setSkuName(productSku.getSkuName());
+        orderItem.setSkuNum(1);
+        orderItem.setSkuPrice(productSku.getSalePrice());
+        orderItem.setThumbImg(productSku.getThumbImg());
+        orderItemList.add(orderItem);
+
+        //订单总金额
+        BigDecimal totalAmount = productSku.getSalePrice();
+
+        //渲染订单确认页面-生成用户流水号
+        String tradeNo = this.generateTradeNo(SecurityUtils.getUserId());
+
+
+        TradeVo tradeVo = new TradeVo();
+        tradeVo.setTotalAmount(totalAmount);
+        tradeVo.setOrderItemList(orderItemList);
+        tradeVo.setTradeNo(tradeNo);
+        return tradeVo;
+
+
+    }
+
+    @Override
+    public List<OrderInfo> selectUserOrderInfoList(Integer orderStatus) {
+        // 获取当前登录用户的id
+        Long userId = SecurityContextHolder.getUserId();
+        // 根据订单状态条件值是否为空, 如果为空查询全部
+        LambdaQueryWrapper<OrderInfo> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(OrderInfo::getUserId,userId);
+        if(orderStatus != null){
+            wrapper.eq(OrderInfo::getOrderStatus,orderStatus);
+        }
+        List<OrderInfo> orderInfoList = baseMapper.selectList(wrapper);
+
+        // 把每个订单里面所有订单项查询,进行封装
+        List<Long> orderIdList = Optional.ofNullable(orderInfoList)
+                .orElseThrow()
+                .stream()
+                .map(OrderInfo::getId)
+                .collect(Collectors.toList());
+        Map<Long, List<OrderItem>> orderIdToOrderItemListMap = orderItemMapper.selectList(new LambdaQueryWrapper<OrderItem>()
+                        .in(OrderItem::getOrderId, orderIdList))
+                .stream()
+                .collect(Collectors.groupingBy(OrderItem::getOrderId));
+        orderInfoList.forEach(it->{
+            it.setOrderItemList(orderIdToOrderItemListMap.get(it.getId()));
+        });
+
+        return orderInfoList;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public Long saveOrder(OrderForm orderForm) {
+        // 获取当前登录用户的id
+        Long userId = SecurityContextHolder.getUserId();
+        String userName = SecurityContextHolder.getUserName();
+
+        OrderInfo orderInfo = new OrderInfo();
+        orderInfo.setOrderNo(orderForm.getTradeNo());
+        orderInfo.setUserId(userId);
+        orderInfo.setNickName(userName);
+        orderInfo.setRemark(orderForm.getRemark());
+        UserAddress userAddress = remoteUserAddressService.getUserAddress(orderForm.getUserAddressId(),SecurityConstants.INNER).getData();
+        orderInfo.setReceiverName(userAddress.getName());
+        orderInfo.setReceiverPhone(userAddress.getPhone());
+        orderInfo.setReceiverTagName(userAddress.getTagName());
+        orderInfo.setReceiverProvince(userAddress.getProvinceCode());
+        orderInfo.setReceiverCity(userAddress.getCityCode());
+        orderInfo.setReceiverDistrict(userAddress.getDistrictCode());
+        orderInfo.setReceiverAddress(userAddress.getFullAddress());
+
+        List<OrderItem> orderItemList = orderForm.getOrderItemList();
+        BigDecimal totalAmount = new BigDecimal(0);
+        orderItemList.forEach(orderItem -> {
+            totalAmount.add(orderItem.getSkuPrice()).multiply(new BigDecimal(orderItem.getSkuNum()));
+        });
+
+        orderInfo.setTotalAmount(totalAmount);
+        orderInfo.setCouponAmount(new BigDecimal(0));
+        orderInfo.setOriginalTotalAmount(totalAmount);
+        orderInfo.setFeightFee(orderForm.getFeightFee());
+        orderInfo.setOrderStatus(0);
+        orderInfo.setCreateBy(userName);
+        orderInfo.setCreateTime(new Date());
+
+        orderInfoMapper.insert(orderInfo);
+
+        for (OrderItem orderItem : orderItemList) {
+            orderItem.setOrderId(orderInfo.getId());
+            orderItemMapper.insert(orderItem);
+        }
+
+        //返回订单id
+        return orderInfo.getId();
+
     }
 
     private String generateTradeNo(Long userId) {
