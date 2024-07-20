@@ -1,10 +1,11 @@
 package com.spzx.order.domain;
 
-import java.math.BigDecimal;
-import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
 import com.spzx.common.core.annotation.Excel;
 import com.spzx.common.core.web.domain.BaseEntity;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+
+import java.math.BigDecimal;
 
 /**
  * 订单项信息对象 order_item
@@ -46,6 +47,6 @@ public class OrderItem extends BaseEntity
     /** 商品购买的数量 */
     @Excel(name = "商品购买的数量")
     @Schema(description = "商品购买的数量")
-    private Long skuNum;
+    private Integer skuNum;
 
 }

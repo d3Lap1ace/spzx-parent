@@ -1,14 +1,13 @@
 package com.spzx.channel.service.Impl;
 
 
-import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson2.JSON;
 import com.spzx.channel.domain.ItemVo;
 import com.spzx.channel.service.IItemService;
 import com.spzx.common.core.constant.SecurityConstants;
 import com.spzx.common.core.domain.R;
 import com.spzx.common.core.exception.ServiceException;
 import com.spzx.product.api.RemoteProductService;
-
 import com.spzx.product.api.domain.Product;
 import com.spzx.product.api.domain.ProductDetails;
 import com.spzx.product.api.domain.ProductSku;
@@ -16,12 +15,11 @@ import com.spzx.product.api.domain.SkuPrice;
 import com.spzx.product.api.domain.vo.SkuStockVo;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-
-
 import org.redisson.api.RBloomFilter;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;

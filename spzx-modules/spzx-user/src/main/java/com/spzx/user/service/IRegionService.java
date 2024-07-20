@@ -1,8 +1,8 @@
 package com.spzx.user.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.spzx.user.api.domain.UserAddress;
 import com.spzx.user.domain.Region;
-
 
 import java.util.List;
 

@@ -9,6 +9,7 @@ import com.spzx.common.core.exception.ServiceException;
 import com.spzx.product.api.RemoteProductService;
 import com.spzx.product.api.domain.ProductSku;
 import com.spzx.product.api.domain.SkuPrice;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.BoundHashOperations;
@@ -32,7 +33,7 @@ import java.util.stream.Collectors;
 @Service
 public class CartServiceImpl implements ICartService {
 
-    @Autowired
+    @Resource
     private RemoteProductService remoteProductService;
     @Autowired
     private RedisTemplate redisTemplate;
@@ -54,6 +55,7 @@ public class CartServiceImpl implements ICartService {
         String cartKey = this.getCartKey(userId);
 
         //2.创建Hash结构绑定操作对象（方便对hash进行操作）
+//        BoundHashOperations<String, String, String> hashOps =redisTemplate.boundHashOps(cartKey);
         BoundHashOperations<String, String, CartInfo> hashOps =redisTemplate.boundHashOps(cartKey);
 
         //4.判断用户购物车中是否包含该商品 如果包含：数量进行累加(某件商品数量上限99) 不包含：新增购物车商品
@@ -62,9 +64,14 @@ public class CartServiceImpl implements ICartService {
         Boolean hasKey = hashOps.hasKey(hashKey);
         if(hasKey) {
             //4.1 说明该商品在购物车中已有，对数量进行累加 ，不能超过指定上限99
+//            String str = hashOps.get(hashKey);
+//            CartInfo cartInfo = JSON.parseObject(str,CartInfo.class);
             CartInfo cartInfo = hashOps.get(hashKey);
             int totalCount = (cartInfo.getSkuNum() + skuNum);
             cartInfo.setSkuNum(totalCount > threshold ? threshold : totalCount);
+
+
+//            hashOps.put(hashKey, JSON.toJSONString(cartInfo));
             hashOps.put(hashKey, cartInfo);
         }else {
             //4.2.判断购物车商品种类（不同SKU）总数大于50件
@@ -97,7 +104,8 @@ public class CartServiceImpl implements ICartService {
             cartInfo.setSkuPrice(skuPrice.getSalePrice());
 
             //4.3 将购物车商品存入Redis
-            hashOps.put(hashKey, cartInfo);
+//            hashOps.put(hashKey, JSON.toJSONString(cartInfo));
+            hashOps.put(hashKey,cartInfo);
         }
 
 
@@ -110,6 +118,8 @@ public class CartServiceImpl implements ICartService {
         // 获取当前购物车key
         String cartKey = this.getCartKey(userId);
         // 获取购物车信息
+//        BoundHashOperations<String,String,CartInfo> hashOperations = redisTemplate.boundHashOps(cartKey);
+//        List<CartInfo> cartInfoList = hashOperations.values();
         List<CartInfo> cartInfoList = redisTemplate.opsForHash().values(cartKey);
         if(!CollectionUtils.isEmpty(cartInfoList)) {
             List<CartInfo> infoList = cartInfoList.stream()
@@ -123,7 +133,8 @@ public class CartServiceImpl implements ICartService {
             if(R.FAIL == skuPriceListResult.getCode()) {
                 throw new ServiceException(skuPriceListResult.getMsg());
             }
-            Map<Long, BigDecimal> skuIdToPriceMap = skuPriceListResult.getData().stream().collect(Collectors.toMap(SkuPrice::getSkuId, SkuPrice::getSalePrice));
+            Map<Long, BigDecimal> skuIdToPriceMap = skuPriceListResult.getData().stream()
+                    .collect(Collectors.toMap(SkuPrice::getSkuId, SkuPrice::getSalePrice));
             infoList.forEach(it->{
                 it.setSkuPrice(skuIdToPriceMap.get(it.getSkuId()));
             });
