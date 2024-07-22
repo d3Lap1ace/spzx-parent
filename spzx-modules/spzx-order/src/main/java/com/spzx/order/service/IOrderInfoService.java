@@ -32,4 +32,7 @@ public interface IOrderInfoService extends IService<OrderInfo>
 
     List<OrderInfo> selectUserOrderInfoList(Integer orderStatus);
 
+    void processCloseOrder(long orderId);
+
+    void cancelOrder(Long orderId);
 }

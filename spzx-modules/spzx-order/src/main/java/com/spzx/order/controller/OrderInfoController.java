@@ -155,4 +155,12 @@ public class OrderInfoController extends BaseController
         return getDataTable(list);
     }
 
+    @Operation(summary = "取消订单")
+    @RequiresLogin
+    @GetMapping("cancelOrder/{orderId}")
+    public AjaxResult cancelOrder(@PathVariable Long orderId) {
+        orderInfoService.cancelOrder(orderId);
+        return success();
+    }
+
 }

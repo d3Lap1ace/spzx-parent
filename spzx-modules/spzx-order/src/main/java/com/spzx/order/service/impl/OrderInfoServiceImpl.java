@@ -8,19 +8,23 @@ import com.spzx.common.core.constant.SecurityConstants;
 import com.spzx.common.core.context.SecurityContextHolder;
 import com.spzx.common.core.domain.R;
 import com.spzx.common.core.exception.ServiceException;
+import com.spzx.common.rabbit.constant.MqConst;
+import com.spzx.common.rabbit.service.RabbitService;
 import com.spzx.common.security.utils.SecurityUtils;
-import com.spzx.order.domain.OrderForm;
-import com.spzx.order.domain.OrderInfo;
-import com.spzx.order.domain.OrderItem;
-import com.spzx.order.domain.TradeVo;
+import com.spzx.order.domain.*;
 import com.spzx.order.mapper.OrderInfoMapper;
 import com.spzx.order.mapper.OrderItemMapper;
+import com.spzx.order.mapper.OrderLogMapper;
 import com.spzx.order.service.IOrderInfoService;
 import com.spzx.product.api.RemoteProductService;
 import com.spzx.product.api.domain.ProductSku;
 import com.spzx.product.api.domain.SkuPrice;
 import com.spzx.user.api.RemoteUserAddressService;
 import com.spzx.user.api.domain.UserAddress;
+import jakarta.annotation.Resource;
+import org.redisson.api.RBlockingDeque;
+import org.redisson.api.RDelayedQueue;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -44,21 +48,26 @@ import java.util.stream.Collectors;
 @Service
 public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo> implements IOrderInfoService
 {
-    @Autowired
-    private OrderInfoMapper orderInfoMapper;
-    @Autowired
-    private RemoteCartService remoteCartService;
 
+
+    @Resource
+    private OrderInfoMapper orderInfoMapper;
+    @Resource
+    private RemoteCartService remoteCartService;
     @Autowired
     private RedisTemplate redisTemplate;
-    @Autowired
+    @Resource
     private RemoteProductService remoteProductService;
-
-    @Autowired
+    @Resource
     private RemoteUserAddressService remoteUserAddressService;
-
-    @Autowired
+    @Resource
     private OrderItemMapper orderItemMapper;
+    @Autowired
+    private RedissonClient redissonClient;
+    @Resource
+    private OrderLogMapper orderLogMapper;
+    @Autowired
+    private RabbitService rabbitService;
 
     /**
      * 查询订单列表
@@ -178,8 +187,25 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
 
         //5 删除购物车选中商品
         remoteCartService.deleteCartCheckedList(userId,SecurityConstants.INNER);
+
+        //6 发送延迟消息，实现30分钟没有支付订单，订单关闭
+        this.sendDelayMessage(orderId);
+
+
+
         return orderId;
     }
+
+    private void sendDelayMessage(Long orderId) {
+        // 1. Redisson创建阻塞队列
+        RBlockingDeque<Object> blockingDeque = redissonClient.getBlockingDeque(MqConst.ROUTING_CANCEL_ORDER);
+        // 2. 在阻塞队列基础上，创建延迟队列
+        RDelayedQueue<Object> delayedQueue = redissonClient.getDelayedQueue(blockingDeque);
+
+        // 3. 向延迟队列放消息
+        delayedQueue.offer(orderId.toString(),10,TimeUnit.SECONDS);
+    }
+
 
     @Override
     public TradeVo buy(Long skuId) {
@@ -237,6 +263,46 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         });
 
         return orderInfoList;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void processCloseOrder(long orderId) {
+        OrderInfo orderInfo = orderInfoMapper.selectById(orderId);
+        if(orderInfo==null && orderInfo.getOrderStatus().intValue() == 0){
+            orderInfo.setOrderStatus(-1);
+            orderInfo.setCancelTime(new Date());
+            orderInfo.setCancelReason("自动取消");
+            orderInfoMapper.updateById(orderInfo);
+
+            //记录日志
+            OrderLog orderLog = new OrderLog();
+            orderLog.setNote("系统取消");
+            orderLog.setOrderId(orderInfo.getId());
+            orderLog.setProcessStatus(-1L);
+            orderLog.setOperateUser("后台管理");
+            orderLogMapper.insert(orderLog);
+
+        }
+    }
+
+    @Override
+    public void cancelOrder(Long orderId) {
+        OrderInfo orderInfo = orderInfoMapper.selectById(orderId);
+        if(null != orderInfo && orderInfo.getOrderStatus().intValue() == 0) {
+            orderInfo.setOrderStatus(-1);
+            orderInfo.setCancelTime(new Date());
+            orderInfo.setCancelReason("用户取消订单");
+            orderInfoMapper.updateById(orderInfo);
+            //记录日志
+            OrderLog orderLog = new OrderLog();
+            orderLog.setOrderId(orderInfo.getId());
+            orderLog.setProcessStatus(-1l);
+            orderLog.setNote("用户取消订单");
+            orderLogMapper.insert(orderLog);
+            //发送MQ消息通知商品系统解锁库存
+            rabbitService.sendMessage(MqConst.EXCHANGE_PRODUCT, MqConst.QUEUE_UNLOCK, orderInfo.getOrderNo());
+        }
     }
 
     @Transactional(rollbackFor = Exception.class)

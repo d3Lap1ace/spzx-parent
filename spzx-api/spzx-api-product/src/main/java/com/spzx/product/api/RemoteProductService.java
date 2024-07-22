@@ -5,9 +5,9 @@ import com.spzx.common.core.constant.ServiceNameConstants;
 import com.spzx.common.core.domain.R;
 import com.spzx.common.core.web.page.TableDataInfo;
 import com.spzx.product.api.domain.*;
+import com.spzx.product.api.domain.vo.SkuLockVo;
 import com.spzx.product.api.domain.vo.SkuStockVo;
 import com.spzx.product.api.factory.RemoteProductFallbackFactory;
-
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.cloud.openfeign.SpringQueryMap;
 import org.springframework.web.bind.annotation.*;
@@ -57,5 +57,8 @@ public interface RemoteProductService {
 
     @PostMapping(value = "/product/getSkuPriceList")
     public R<List<SkuPrice>> getSkuPriceList(@RequestBody List<Long> skuIdList, @RequestHeader(SecurityConstants.FROM_SOURCE) String source);
+
+    @PostMapping("/product/checkAndLock/{orderNo}")
+    public R<String> checkAndLock(@PathVariable("orderNo") String orderNo, @RequestBody List<SkuLockVo> skuLockVoList, @RequestHeader(SecurityConstants.FROM_SOURCE) String source);
 
 }

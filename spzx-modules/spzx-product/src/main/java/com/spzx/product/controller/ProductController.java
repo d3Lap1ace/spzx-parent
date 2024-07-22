@@ -4,11 +4,13 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.github.pagehelper.PageHelper;
 import com.spzx.common.core.domain.R;
+import com.spzx.common.core.exception.ServiceException;
 import com.spzx.common.core.web.controller.BaseController;
 import com.spzx.common.core.web.domain.AjaxResult;
 import com.spzx.common.core.web.page.TableDataInfo;
 import com.spzx.common.security.annotation.InnerAuth;
 import com.spzx.product.api.domain.*;
+import com.spzx.product.api.domain.vo.SkuLockVo;
 import com.spzx.product.api.domain.vo.SkuStockVo;
 import com.spzx.product.service.IProductService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -207,6 +209,21 @@ public class ProductController extends BaseController {
     public R<List<SkuPrice>> getSkuPriceList(@RequestBody List<Long> skuIdList)
     {
         return R.ok(productService.getSkuPriceList(skuIdList));
+    }
+
+    @InnerAuth
+    @Operation(summary = "检查与锁定库存")
+    @PostMapping("checkAndLock/{orderNo}")
+    public R<String> checkAndLock(@PathVariable String orderNo, @RequestBody List<SkuLockVo> skuLockVoList) {
+        try {
+            return R.ok(productService.checkAndLock(orderNo, skuLockVoList));
+        } catch (ServiceException e) {
+            e.printStackTrace();
+            return R.ok(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return R.ok("库存不足");
+        }
     }
 
 

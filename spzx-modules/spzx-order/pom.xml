@@ -58,6 +58,13 @@
             <artifactId>spzx-common-log</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.spzx</groupId>
+            <artifactId>spzx-common-rabbit</artifactId>
+            <version>3.6.3</version>
+        </dependency>
+
+
     </dependencies>
 
     <build>

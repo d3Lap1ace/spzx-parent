@@ -40,4 +40,14 @@
         <if test="order == 2">order by sku.sale_price asc</if>
         <if test="order == 3">order by sku.sale_price desc</if>
     </select>
+    
+    <select id="check" resultType="com.spzx.product.domain.SkuStock">
+        select * from sku_stock where sku_id = #{skuId} and available_num > #{num} for update
+    </select>
+
+    <update id="lock">
+        update sku_stock
+        set lock_num = lock_num + #{num}, available_num = available_num - #{num}
+        where sku_id = #{skuId}
+    </update>
 </mapper>

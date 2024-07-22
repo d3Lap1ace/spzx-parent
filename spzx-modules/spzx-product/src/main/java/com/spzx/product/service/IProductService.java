@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.spzx.product.api.domain.*;
+import com.spzx.product.api.domain.vo.SkuLockVo;
 import com.spzx.product.api.domain.vo.SkuStockVo;
 
 import java.util.List;
@@ -94,4 +95,6 @@ public interface IProductService extends IService<Product> {
     SkuStockVo getSkuStock(Long skuId);
 
     List<SkuPrice> getSkuPriceList(List<Long> skuIdList);
+
+    String checkAndLock(String orderNo, List<SkuLockVo> skuLockVoList);
 }

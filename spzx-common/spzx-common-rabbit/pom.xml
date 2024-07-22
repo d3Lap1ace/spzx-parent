@@ -9,7 +9,7 @@
         <version>3.6.3</version>
     </parent>
 
-    <groupId>com.spzx.common.rabbit</groupId>
+    <groupId>com.spzx</groupId>
     <artifactId>spzx-common-rabbit</artifactId>
 
     <properties>

@@ -4,10 +4,12 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.spzx.common.core.exception.ServiceException;
 import com.spzx.common.core.utils.bean.BeanUtils;
 import com.spzx.common.core.utils.uuid.UUID;
 import com.spzx.common.redis.cache.RedisCache;
 import com.spzx.product.api.domain.*;
+import com.spzx.product.api.domain.vo.SkuLockVo;
 import com.spzx.product.api.domain.vo.SkuStockVo;
 import com.spzx.product.domain.*;
 import com.spzx.product.mapper.ProductDetailsMapper;
@@ -386,5 +388,67 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
             skuPrice.setSalePrice(it.getSalePrice());
             return skuPrice;
         }).collect(Collectors.toList());
+    }
+
+
+    @Transactional(rollbackFor = {Exception.class})
+    @Override
+    public String checkAndLock(String orderNo, List<SkuLockVo> skuLockVoList) {
+        String key = "sku:checkAndLcok:"+orderNo;
+        String dataKey = "sku:lock:data:"+ orderNo;
+        // 防止重复
+        Boolean flag = redisTemplate.opsForValue().setIfAbsent(key, orderNo, 1, TimeUnit.HOURS);
+        if(!flag){
+            if(redisTemplate.hasKey(dataKey)){
+                return "";
+            }else {
+                return "重复提交";
+            }
+        }
+
+        // 遍历所有商品,验库存并锁库存,要具有原子性
+        skuLockVoList.forEach(skuLockVo -> {
+            SkuStock skuStock = skuStockMapper.check(skuLockVo.getSkuId(),skuLockVo.getSkuNum());
+            // 如果没有一个商品满足要求,这里就验库存失败
+            if(skuStock == null){
+                skuLockVo.setIsHaveStock(false);
+            }else {
+                skuLockVo.setIsHaveStock(true);
+            }
+        });
+
+        // 只要有一个商品锁定失败,所有锁定成功的商品要解锁库存
+        if(skuLockVoList.stream().anyMatch(skuLockVo -> !skuLockVo.getIsHaveStock())){
+            // 获得锁定成功的商品要解锁库存
+            StringBuffer result = new StringBuffer();
+            // 获取没有库存的对象列表
+            List<SkuLockVo> noHaveStickSkuLockVoList = skuLockVoList
+                    .stream()
+                    .filter(it -> !it.getIsHaveStock())
+                    .collect(Collectors.toList());
+            noHaveStickSkuLockVoList.forEach(noHaveStickSkuLockVo -> {
+                        this.redisTemplate.delete(key);
+                        result.append("商品: "+ noHaveStickSkuLockVo.getSkuId()+"库存不足");
+            });
+
+            // 锁定失败
+            redisTemplate.delete(key);
+            // 响应锁定状态
+            return result.toString();
+        }else {
+            // 锁定库存
+            skuLockVoList.forEach(skuLockVo -> {
+                int row = skuStockMapper.lock(skuLockVo.getSkuId(),skuLockVo.getSkuNum());
+                if(row == 0){
+                    // 解除去重
+                    this.redisTemplate.delete(key);
+                    throw new ServiceException("库存锁定失败");
+                }
+            });
+        }
+
+        // 如果所有商品都锁定成功的情况下,需要缓存锁定信息到redis,以方便将来解锁库存 或者 减库存
+        this.redisTemplate.opsForValue().set(dataKey,skuLockVoList);
+        return "";
     }
 }
