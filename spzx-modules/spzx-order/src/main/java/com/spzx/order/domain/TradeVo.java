@@ -1,11 +1,13 @@
 package com.spzx.order.domain;
 
 
+import com.spzx.order.api.domain.OrderItem;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.math.BigDecimal;
 import java.util.List;
+
 
 @Data
 @Schema(description = "结算实体类")

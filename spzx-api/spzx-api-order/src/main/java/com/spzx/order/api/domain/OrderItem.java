@@ -1,4 +1,4 @@
-package com.spzx.order.domain;
+package com.spzx.order.api.domain;
 
 import com.spzx.common.core.annotation.Excel;
 import com.spzx.common.core.web.domain.BaseEntity;

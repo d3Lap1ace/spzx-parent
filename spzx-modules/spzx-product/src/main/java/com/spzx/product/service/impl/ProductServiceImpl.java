@@ -11,7 +11,7 @@ import com.spzx.common.redis.cache.RedisCache;
 import com.spzx.product.api.domain.*;
 import com.spzx.product.api.domain.vo.SkuLockVo;
 import com.spzx.product.api.domain.vo.SkuStockVo;
-import com.spzx.product.domain.*;
+import com.spzx.product.domain.SkuStock;
 import com.spzx.product.mapper.ProductDetailsMapper;
 import com.spzx.product.mapper.ProductMapper;
 import com.spzx.product.mapper.ProductSkuMapper;
@@ -27,6 +27,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.Arrays;
@@ -123,8 +124,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         List<Long> skuIdList = productSkuList.stream().map(ProductSku::getId).collect(Collectors.toList()); // skuid集合
 
         List<SkuStock> skuStockList = skuStockMapper.selectList(new LambdaQueryWrapper<SkuStock>()
-                .in(SkuStock::getSkuId,skuIdList)
-                .select(SkuStock::getSkuId, SkuStock::getTotalNum));
+                .in(SkuStock::getSkuId,Arrays.asList(skuIdList)).select(SkuStock::getSkuId, SkuStock::getTotalNum));
 
 
         Map<Long, Integer> skuIdToStockNumMap = skuStockList.stream()
@@ -174,9 +174,9 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         List<ProductSku> productSkuList = productSkuMapper.selectList(new LambdaQueryWrapper<ProductSku>().in(ProductSku::getProductId, ids)
                 .select(ProductSku::getId));
         List<Long> skuIdList = productSkuList.stream().map(ProductSku::getId).collect(Collectors.toList());
-        productSkuMapper.delete(new LambdaQueryWrapper<ProductSku>().in(ProductSku::getProductId, ids));
-        skuStockMapper.delete(new LambdaQueryWrapper<SkuStock>().in(SkuStock::getSkuId, skuIdList));
-        productDetailsMapper.delete(new LambdaQueryWrapper<ProductDetails>().in(ProductDetails::getProductId, ids));
+        productSkuMapper.delete(new LambdaQueryWrapper<ProductSku>().in(ProductSku::getProductId, Arrays.asList(ids)));
+        skuStockMapper.delete(new LambdaQueryWrapper<SkuStock>().in(SkuStock::getSkuId, Arrays.asList(skuIdList)));
+        productDetailsMapper.delete(new LambdaQueryWrapper<ProductDetails>().in(ProductDetails::getProductId, Arrays.asList(ids)));
         return 1;
 
     }
@@ -216,6 +216,10 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         baseMapper.updateById(product);
     }
 
+    /**
+     * 远程 获取销量好的sku
+     * @return
+     */
     @Override
     public List<ProductSku> getTopSale() {
         return productSkuMapper.selectTopSale();
@@ -450,5 +454,58 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         // 如果所有商品都锁定成功的情况下,需要缓存锁定信息到redis,以方便将来解锁库存 或者 减库存
         this.redisTemplate.opsForValue().set(dataKey,skuLockVoList);
         return "";
+    }
+
+    @Override
+    public void unlock(String orderNo) {
+        String key = "sku:unlock:" + orderNo;
+        String dataKey = "sku:lock:data:" + orderNo;
+        //业务去重，防止重复消费
+        Boolean isExist = redisTemplate.opsForValue().setIfAbsent(key, orderNo, 1, TimeUnit.HOURS);
+        if(!isExist) return;
+        // 获取锁定库存的缓存信息
+        List<SkuLockVo> skuLockVoList = (List<SkuLockVo>)this.redisTemplate.opsForValue().get(dataKey);
+        if (CollectionUtils.isEmpty(skuLockVoList)){
+            return ;
+        }
+        // 解锁库存呢
+        skuLockVoList.forEach(skuLockVo -> {
+            int row = skuStockMapper.unlock(skuLockVo.getSkuId(),skuLockVo.getSkuNum());
+            if(row == 0){
+                this.redisTemplate.delete(key);
+                throw new ServiceException("解锁出库失败");
+            }
+        });
+
+        // 解锁库存之后,删除锁定库存的缓存,以防止重复解锁库存
+        this.redisTemplate.delete(key);
+
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void minus(String orderNo) {
+        String key = "sku:minus:" + orderNo;
+        String dataKey = "sku:lock:data:" + orderNo;
+        //业务去重，防止重复消费
+        Boolean flag = redisTemplate.opsForValue().setIfAbsent(key, orderNo, 1, TimeUnit.HOURS);
+        if(!flag) return;
+
+        // 获取锁定库存的缓存信息
+        List<SkuLockVo> skuLockVoList = (List<SkuLockVo>)this.redisTemplate.opsForValue().get(dataKey);
+        if(CollectionUtils.isEmpty(skuLockVoList)){return;}
+
+        // 减库存
+        skuLockVoList.forEach(skuLockVo -> {
+            int row = skuStockMapper.minus(skuLockVo.getSkuId(),skuLockVo.getSkuNum());
+            if(row == 0){
+                // 解除去重
+                this.redisTemplate.delete(key);
+                throw new ServiceException("减库存失败");
+            }
+        });
+
+        // 解锁库存之后，删除锁定库存的缓存。以防止重复解锁库存
+        this.redisTemplate.delete(key);
     }
 }

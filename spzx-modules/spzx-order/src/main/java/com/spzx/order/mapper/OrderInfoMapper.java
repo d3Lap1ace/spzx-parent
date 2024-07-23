@@ -1,8 +1,9 @@
 package com.spzx.order.mapper;
 
-import java.util.List;
-import com.spzx.order.domain.OrderInfo;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.spzx.order.api.domain.OrderInfo;
+
+import java.util.List;
 
 /**
  * 订单Mapper接口

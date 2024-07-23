@@ -1,8 +1,8 @@
 package com.spzx.order.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.spzx.order.api.domain.OrderInfo;
 import com.spzx.order.domain.OrderForm;
-import com.spzx.order.domain.OrderInfo;
 import com.spzx.order.domain.TradeVo;
 
 import java.util.List;
@@ -35,4 +35,6 @@ public interface IOrderInfoService extends IService<OrderInfo>
     void processCloseOrder(long orderId);
 
     void cancelOrder(Long orderId);
+
+    OrderInfo getByOrderNo(String orderNo);
 }

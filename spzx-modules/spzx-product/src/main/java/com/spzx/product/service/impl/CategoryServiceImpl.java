@@ -2,7 +2,6 @@ package com.spzx.product.service.impl;
 
 import com.alibaba.excel.EasyExcel;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.mapper.Mapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.spzx.product.api.domain.vo.CategoryVo;
 import com.spzx.product.domain.Category;
@@ -13,9 +12,7 @@ import com.spzx.product.utils.CategoryUtils;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -38,15 +35,22 @@ import java.util.stream.Collectors;
 public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> implements ICategoryService {
     @Resource
     private CategoryMapper categoryMapper;
+
+    /**
+     * 首页获取商品
+     * 获取分类下拉树列表
+     * @param id
+     * @return
+     */
     @Override
     public List<Category> treeSelect(Long id) {
 
         List<Category> list = categoryMapper.selectList(new LambdaQueryWrapper<Category>()
                 .eq(Category::getParentId,id));
-        Optional.ofNullable(list).orElseGet(()->{
-            System.out.println("list is null");
-            return list;
-        }).stream().forEach(it->{
+        Optional.ofNullable(list)
+                .orElseGet(ArrayList::new)
+                .stream()
+                .forEach(it->{
             long count = categoryMapper.selectCount(new LambdaQueryWrapper<Category>()
                     .eq(Category::getParentId,it.getId()));
             if(count>0){
@@ -58,10 +62,16 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
         return list;
     }
 
+    /**
+     * 获取本层id以及上层id
+     * @param Id 分类id
+     * @return
+     */
     @Override
     public List<Long> getCategoryByCategoryId(Long Id) {
+        // 创建空集合 用于保存分类id
         ArrayList<Long> list = new ArrayList<>();
-
+        // 调用递归方法  categoryList 上级及本级的id
         List<Category> categoryList = this.getParentCategory(Id,new ArrayList<Category>());
 
         int size = categoryList.size();
@@ -136,9 +146,15 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
         }
     }
 
+    /**
+     * 远程调用 获取商品一级分类
+     * @return
+     */
     @Override
     public List<CategoryVo> getOneCategory() {
+        // 获得所有的一级分类  parentid == 0 为一级分类
         List<Category> categoryList = categoryMapper.selectList(new LambdaQueryWrapper<Category>().eq(Category::getParentId, 0));
+        // 转为vo视层集合
         List<CategoryVo> categoryVoList = categoryList.stream().map(category -> {
             CategoryVo categoryVo = new CategoryVo();
             BeanUtils.copyProperties(category, categoryVo, CategoryVo.class);
@@ -147,17 +163,30 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
         return categoryVoList;
     }
 
+
+    /**
+     * h5分类接口
+     * @return
+     */
     @Override
     public List<CategoryVo> tree() {
-        List<Category> categoryList = categoryMapper.selectList(null);
-        List<CategoryVo> categoryVoList = categoryList.stream().map(category -> {
+        // 将查询的实体分类集合 转为视图分类集合
+        List<CategoryVo> categoryVoList  = categoryMapper.selectList(null) //传入null参数，来获取所有类别的列表
+                .stream()
+                .map(category -> {
             CategoryVo categoryVo = new CategoryVo();
             BeanUtils.copyProperties(category, categoryVo, CategoryVo.class);
             return categoryVo;
         }).collect(Collectors.toList());
-        return CategoryUtils.buildTree(categoryVoList);
+        return CategoryUtils.buildTree(categoryVoList); // 递归方法
     }
 
+    /**
+     * 用于递归调用
+     * @param Id
+     * @param categoryList
+     * @return
+     */
     private List<Category> getParentCategory(Long Id, ArrayList<Category> categoryList) {
 
         while (Id > 0){

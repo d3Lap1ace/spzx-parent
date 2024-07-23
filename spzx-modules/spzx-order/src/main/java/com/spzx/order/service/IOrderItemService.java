@@ -1,8 +1,9 @@
 package com.spzx.order.service;
 
-import java.util.List;
-import com.spzx.order.domain.OrderItem;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.spzx.order.api.domain.OrderItem;
+
+import java.util.List;
 
 /**
  * 订单项信息Service接口

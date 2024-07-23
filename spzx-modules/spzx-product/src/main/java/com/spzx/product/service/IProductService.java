@@ -97,4 +97,8 @@ public interface IProductService extends IService<Product> {
     List<SkuPrice> getSkuPriceList(List<Long> skuIdList);
 
     String checkAndLock(String orderNo, List<SkuLockVo> skuLockVoList);
+
+    void unlock(String orderNo);
+
+    void minus(String orderNo);
 }

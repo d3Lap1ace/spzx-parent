@@ -35,7 +35,7 @@ public class IndexServiceImpl implements IIndexService {
 
     @Override
     public Map<String, Object> getIndexData() {
-        // 获取分类视图对象
+        // 远程 获取分类视图对象
         R<List<CategoryVo>> categoryResultMsg = categoryService.getOneCategory(SecurityConstants.INNER);
         // 获取失败
         if(R.FAIL == categoryResultMsg.getCode()){

@@ -131,16 +131,23 @@ public class ProductController extends BaseController {
     }
 
     /**
-     * 获取销量好的sku
+     * 远程 获取销量好的sku
      * @return
      */
-    @InnerAuth
     @Operation(summary = "获取销量好的sku")
+    @InnerAuth
     @GetMapping("getTopSale")
     public R<List<ProductSku>> getTopSale() {
         return R.ok(productService.getTopSale());
     }
 
+    /**
+     * 远程 商品列表搜索
+     * @param pageNum
+     * @param pageSize
+     * @param skuQuery
+     * @return
+     */
     @InnerAuth
     @GetMapping("/skuList/{pageNum}/{pageSize}")
     public R<TableDataInfo> skuList(

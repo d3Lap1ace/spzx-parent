@@ -1,15 +1,15 @@
-package com.spzx.order.domain;
+package com.spzx.order.api.domain;
+
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.spzx.common.core.annotation.Excel;
+import com.spzx.common.core.web.domain.BaseEntity;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
 
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
-
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.fasterxml.jackson.annotation.JsonFormat;
-import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
-import com.spzx.common.core.annotation.Excel;
-import com.spzx.common.core.web.domain.BaseEntity;
 
 /**
  * 订单对象 order_info

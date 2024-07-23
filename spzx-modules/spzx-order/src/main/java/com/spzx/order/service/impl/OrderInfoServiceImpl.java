@@ -11,7 +11,11 @@ import com.spzx.common.core.exception.ServiceException;
 import com.spzx.common.rabbit.constant.MqConst;
 import com.spzx.common.rabbit.service.RabbitService;
 import com.spzx.common.security.utils.SecurityUtils;
-import com.spzx.order.domain.*;
+import com.spzx.order.api.domain.OrderInfo;
+import com.spzx.order.api.domain.OrderItem;
+import com.spzx.order.domain.OrderForm;
+import com.spzx.order.domain.OrderLog;
+import com.spzx.order.domain.TradeVo;
 import com.spzx.order.mapper.OrderInfoMapper;
 import com.spzx.order.mapper.OrderItemMapper;
 import com.spzx.order.mapper.OrderLogMapper;
@@ -46,9 +50,7 @@ import java.util.stream.Collectors;
  * @date 2024-07-10
  */
 @Service
-public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo> implements IOrderInfoService
-{
-
+public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo> implements IOrderInfoService {
 
     @Resource
     private OrderInfoMapper orderInfoMapper;
@@ -69,6 +71,7 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
     @Autowired
     private RabbitService rabbitService;
 
+
     /**
      * 查询订单列表
      *
@@ -76,8 +79,7 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
      * @return 订单
      */
     @Override
-    public List<OrderInfo> selectOrderInfoList(OrderInfo orderInfo)
-    {
+    public List<OrderInfo> selectOrderInfoList(OrderInfo orderInfo) {
         return orderInfoMapper.selectOrderInfoList(orderInfo);
     }
 
@@ -86,11 +88,11 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         // 获取当前登录用户的id
         Long userId = SecurityContextHolder.getUserId();
         R<List<CartInfo>> cartInfoListResult = remoteCartService.getCartCheckedList(userId, SecurityConstants.INNER);
-        if(R.FAIL==cartInfoListResult.getCode()){
+        if (R.FAIL == cartInfoListResult.getCode()) {
             throw new ServiceException(cartInfoListResult.getMsg());
         }
         List<CartInfo> cartInfoList = cartInfoListResult.getData();
-        if(CollectionUtils.isEmpty(cartInfoList)){
+        if (CollectionUtils.isEmpty(cartInfoList)) {
             throw new ServiceException("购物车无选中商品");
         }
 
@@ -111,7 +113,7 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
 //                });
         //订单总金额
         //订单总金额
-        for(OrderItem orderItem : orderItemList) {
+        for (OrderItem orderItem : orderItemList) {
             totalAmount = totalAmount.add(orderItem.getSkuPrice().multiply(new BigDecimal(orderItem.getSkuNum())));
         }
 
@@ -124,12 +126,13 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         return tradeVo;
     }
 
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public Long submitOrder(OrderForm orderForm) {
         // 获取当前登录用户的id
         Long userId = SecurityContextHolder.getUserId();
 
-        //  保证删除流水号具备原子性，使用lua脚本
+        //  保证订单流水号具备原子性，使用lua脚本
         String userTradeKey = "user:tradeNo:" + userId;
         String scriptText = "if redis.call(\"get\",KEYS[1]) == ARGV[1]\n" +
                 "then\n" +
@@ -140,14 +143,14 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         DefaultRedisScript<Long> redisScript = new DefaultRedisScript<>();
         redisScript.setScriptText(scriptText);
         redisScript.setResultType(Long.class);
-        Long flag = (Long) redisTemplate.execute(redisScript, Arrays.asList(userTradeKey),orderForm.getTradeNo());
-        if(flag == 0){
+        Long flag = (Long) redisTemplate.execute(redisScript, Arrays.asList(userTradeKey), orderForm.getTradeNo());
+        if (flag == 0) {
             throw new ServiceException("请勿重复提交订单，请尝试重试");
         }
 
         // 2. 判断购物项
         List<OrderItem> orderItemList = orderForm.getOrderItemList();
-        if(CollectionUtils.isEmpty(orderItemList)){
+        if (CollectionUtils.isEmpty(orderItemList)) {
             throw new ServiceException("请求不合法");
         }
 
@@ -156,7 +159,7 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         List<Long> skuIdList = orderItemList.stream().map(OrderItem::getSkuId).collect(Collectors.toList());
         // 3.2 根据商品id列表 远程调用 获得商品价格列表
         R<List<SkuPrice>> skuPriceListResult = remoteProductService.getSkuPriceList(skuIdList, SecurityConstants.INNER);
-        if(R.FAIL==skuPriceListResult.getCode()){
+        if (R.FAIL == skuPriceListResult.getCode()) {
             throw new ServiceException(skuPriceListResult.getMsg());
         }
         List<SkuPrice> skuPriceList = skuPriceListResult.getData();
@@ -169,31 +172,34 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         String priceCheckResult = "";
 
         for (OrderItem orderItem : orderItemList) {
-
             if (orderItem.getSkuPrice().compareTo(skuIdToSalePriceMap.get(orderItem.getSkuId())) != 0) {
                 priceCheckResult += orderItem.getSkuName() + "价格变化了; ";
             }
         }
 
         //3.5 如果价格变化，远程调用更新购物车商品价格
-        if(StringUtils.hasText(priceCheckResult)){
-            remoteCartService.updateCartPrice(userId,SecurityConstants.INNER);
+        if (StringUtils.hasText(priceCheckResult)) {
+            remoteCartService.updateCartPrice(userId, SecurityConstants.INNER);
             throw new ServiceException(priceCheckResult);
         }
 
-        // 4 校验库存并锁定库存
-        Long orderId = this.saveOrder(orderForm);
+
+        try {
+            // 4 校验库存并锁定库存
+            Long orderId = this.saveOrder(orderForm);
 
 
-        //5 删除购物车选中商品
-        remoteCartService.deleteCartCheckedList(userId,SecurityConstants.INNER);
+            //5 删除购物车选中商品
+            remoteCartService.deleteCartCheckedList(userId, SecurityConstants.INNER);
 
-        //6 发送延迟消息，实现30分钟没有支付订单，订单关闭
-        this.sendDelayMessage(orderId);
+            //6 发送延迟消息，实现30分钟没有支付订单，订单关闭
+            this.sendDelayMessage(orderId);
 
-
-
-        return orderId;
+            return orderId;
+        } catch (Exception e) {
+            rabbitService.sendMessage(MqConst.EXCHANGE_PRODUCT, MqConst.QUEUE_UNLOCK, orderForm.getTradeNo());
+            throw new ServiceException("下单失败");
+        }
     }
 
     private void sendDelayMessage(Long orderId) {
@@ -203,7 +209,7 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         RDelayedQueue<Object> delayedQueue = redissonClient.getDelayedQueue(blockingDeque);
 
         // 3. 向延迟队列放消息
-        delayedQueue.offer(orderId.toString(),10,TimeUnit.SECONDS);
+        delayedQueue.offer(orderId.toString(), 10, TimeUnit.SECONDS);
     }
 
 
@@ -242,9 +248,9 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         Long userId = SecurityContextHolder.getUserId();
         // 根据订单状态条件值是否为空, 如果为空查询全部
         LambdaQueryWrapper<OrderInfo> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(OrderInfo::getUserId,userId);
-        if(orderStatus != null){
-            wrapper.eq(OrderInfo::getOrderStatus,orderStatus);
+        wrapper.eq(OrderInfo::getUserId, userId);
+        if (orderStatus != null) {
+            wrapper.eq(OrderInfo::getOrderStatus, orderStatus);
         }
         List<OrderInfo> orderInfoList = baseMapper.selectList(wrapper);
 
@@ -258,7 +264,7 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
                         .in(OrderItem::getOrderId, orderIdList))
                 .stream()
                 .collect(Collectors.groupingBy(OrderItem::getOrderId));
-        orderInfoList.forEach(it->{
+        orderInfoList.forEach(it -> {
             it.setOrderItemList(orderIdToOrderItemListMap.get(it.getId()));
         });
 
@@ -269,7 +275,7 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
     @Override
     public void processCloseOrder(long orderId) {
         OrderInfo orderInfo = orderInfoMapper.selectById(orderId);
-        if(orderInfo==null && orderInfo.getOrderStatus().intValue() == 0){
+        if (orderInfo == null && orderInfo.getOrderStatus().intValue() == 0) {
             orderInfo.setOrderStatus(-1);
             orderInfo.setCancelTime(new Date());
             orderInfo.setCancelReason("自动取消");
@@ -283,13 +289,16 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
             orderLog.setOperateUser("后台管理");
             orderLogMapper.insert(orderLog);
 
+            //发送MQ消息通知商品系统解锁库存
+            rabbitService.sendMessage(MqConst.EXCHANGE_PRODUCT, MqConst.QUEUE_UNLOCK, orderInfo.getOrderNo());
+
         }
     }
 
     @Override
     public void cancelOrder(Long orderId) {
         OrderInfo orderInfo = orderInfoMapper.selectById(orderId);
-        if(null != orderInfo && orderInfo.getOrderStatus().intValue() == 0) {
+        if (null != orderInfo && orderInfo.getOrderStatus().intValue() == 0) {
             orderInfo.setOrderStatus(-1);
             orderInfo.setCancelTime(new Date());
             orderInfo.setCancelReason("用户取消订单");
@@ -305,6 +314,21 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         }
     }
 
+    /**
+     * 根据订单号获取订单信息
+     * @param orderNo
+     * @return
+     */
+    @Override
+    public OrderInfo getByOrderNo(String orderNo) {
+        OrderInfo orderInfo = orderInfoMapper.selectOne(new LambdaQueryWrapper<OrderInfo>().eq(OrderInfo::getOrderNo, orderNo));
+        List<OrderItem> orderItemList = orderItemMapper.selectList(new LambdaQueryWrapper<OrderItem>().eq(OrderItem::getOrderId, orderInfo.getId()));
+        orderInfo.setOrderItemList(orderItemList);
+        return orderInfo;
+    }
+
+
+
     @Transactional(rollbackFor = Exception.class)
     public Long saveOrder(OrderForm orderForm) {
         // 获取当前登录用户的id
@@ -316,7 +340,7 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         orderInfo.setUserId(userId);
         orderInfo.setNickName(userName);
         orderInfo.setRemark(orderForm.getRemark());
-        UserAddress userAddress = remoteUserAddressService.getUserAddress(orderForm.getUserAddressId(),SecurityConstants.INNER).getData();
+        UserAddress userAddress = remoteUserAddressService.getUserAddress(orderForm.getUserAddressId(), SecurityConstants.INNER).getData();
         orderInfo.setReceiverName(userAddress.getName());
         orderInfo.setReceiverPhone(userAddress.getPhone());
         orderInfo.setReceiverTagName(userAddress.getTagName());
@@ -359,9 +383,9 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         String tradeNo = UUID.randomUUID().toString().replaceAll("-", "");
 
         //3.将流水号存入Redis 暂存5分钟
-        redisTemplate.opsForValue().set(userTradeKey,tradeNo,5, TimeUnit.MINUTES);
+        redisTemplate.opsForValue().set(userTradeKey, tradeNo, 5, TimeUnit.MINUTES);
 
-        return  tradeNo;
+        return tradeNo;
 
     }
 

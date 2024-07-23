@@ -115,6 +115,10 @@ public class BrandController extends BaseController {
     }
 
 
+    /**
+     * 远程 获取全部品牌
+     * @return
+     */
     @InnerAuth
     @Operation(summary = "获取全部品牌")
     @GetMapping("/getBrandAllList")

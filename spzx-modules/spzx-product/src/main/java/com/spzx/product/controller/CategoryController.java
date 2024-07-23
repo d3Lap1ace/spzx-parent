@@ -45,6 +45,7 @@ public class CategoryController {
      * @return
      * @throws Exception
      */
+    @Operation(summary = "导入")
     @PostMapping("/import")
     public AjaxResult importData(MultipartFile file) throws Exception {
         try {
@@ -60,17 +61,20 @@ public class CategoryController {
      * 文件导出
      * @param response
      */
+    @Operation(summary = "导出")
     @PostMapping("/export")
     public void export(HttpServletResponse response) {
         categoryService.exportData(response);
     }
 
+    @Operation(summary = "远程 获取商品一级分类")
     @InnerAuth
     @GetMapping(value = "/getOneCategory")
     public R<List<CategoryVo>> getOneCategory() {
         return R.ok(categoryService.getOneCategory());
     }
 
+    @Operation(summary = "远程 h5分类接口")
     @InnerAuth
     @GetMapping("/tree")
     public R<List<CategoryVo>> getTree() {

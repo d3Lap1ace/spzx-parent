@@ -47,7 +47,7 @@ public interface ICategoryService extends IService<Category> {
     void exportData(HttpServletResponse response);
 
     /**
-     * 查询所有一级分类
+     * 远程 查询所有一级分类
      * @return
      */
     List<CategoryVo> getOneCategory();
