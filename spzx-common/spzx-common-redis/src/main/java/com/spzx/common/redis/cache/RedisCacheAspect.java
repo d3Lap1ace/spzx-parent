@@ -23,11 +23,11 @@ import java.util.stream.Collectors;
  * @Version 1.0
  * From the Laplace Demon
  */
-
 @Slf4j
 @Aspect
 @Component
 public class RedisCacheAspect {
+
     @Autowired
     private RedisTemplate redisTemplate;
 
@@ -43,9 +43,10 @@ public class RedisCacheAspect {
      * @return
      * @throws Throwable
      */
-    @SneakyThrows  // 不需要在lambda表达式中显式声明注解
+
+    @SneakyThrows// 不需要在lambda表达式中显式声明注解
     @Around("@annotation(redisCache)")
-    public Object redisCacheAdvice(ProceedingJoinPoint pjp,RedisCache redisCache){
+    public Object redisCacheAdvice(ProceedingJoinPoint pjp, RedisCache redisCache) throws Throwable {
         try {
             //1.优先从redis缓存中获取业务数据
             //1.1 构建业务数据key 形式：缓存注解中前缀+方法参数
@@ -55,34 +56,33 @@ public class RedisCacheAspect {
             String paramVal = "none";
             Object[] args = pjp.getArgs();
             if (args != null && args.length > 0) {
-                paramVal = Arrays.asList(args).stream()
+                paramVal = Arrays.asList(args)
+                        .stream()
                         .map(arg -> arg.toString())
                         .collect(Collectors.joining(":"));
             }
             String dataKey = prefix + paramVal;
-
             //1.2 查询redis缓存中业务数据
             Object resultObject = redisTemplate.opsForValue().get(dataKey);
-            if (resultObject != null) {
-                //1.3 命中缓存直接返回即可
+            if (resultObject == null) {
+                // 命中缓存就返回
                 return resultObject;
             }
+
 
             //2.获取分布式锁
             //2.1 构建锁key
             String lockKey = dataKey + ":lock";
             //2.2 采用UUID作为线程标识
-            String lockVal = UUID.randomUUID().toString().replaceAll("-" , "");
+            String lockVal = UUID.randomUUID().toString().replaceAll("-", "");
             //2.3 利用Redis提供set nx ex 获取分布式锁
             Boolean flag = redisTemplate.opsForValue().setIfAbsent(lockKey, lockVal, 5, TimeUnit.SECONDS);
             if (flag) {
-                //3.执行目标方法（查询数据库业务数据）将业务数据放入缓存
                 try {
+                    //3.执行目标方法（查询数据库业务数据）将业务数据放入缓存
                     //3.1 再次查询一次缓存:处于阻塞等待获取线程（终将获取锁成功）避免获取锁线程再次查库，这里再查一次缓存
-                    resultObject = redisTemplate.opsForValue().get(dataKey);
-                    if (resultObject != null) {
-                        return resultObject;
-                    }
+                    redisTemplate.opsForValue().get(dataKey);
+                    if (resultObject != null) { return resultObject;}
 
                     //3.2 未命中缓存，执行查询数据库(目标方法)
                     resultObject = pjp.proceed();
@@ -101,7 +101,7 @@ public class RedisCacheAspect {
                     DefaultRedisScript<Long> redisScript = new DefaultRedisScript<>();
                     redisScript.setScriptText(scriptText);
                     redisScript.setResultType(Long.class);
-                    redisTemplate.execute(redisScript, Arrays.asList(lockKey), lockVal);
+                    redisTemplate.execute(redisScript, Arrays.asList(lockKey),lockVal);
                 }
             }
         } catch (Throwable e) {
@@ -110,6 +110,6 @@ public class RedisCacheAspect {
         }
         //5.兜底处理方案：如果redis服务不可用，则执行查询数据库方法
         return pjp.proceed();
-    }
 
+    }
 }

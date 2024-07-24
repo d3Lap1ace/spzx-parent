@@ -93,4 +93,5 @@ public class CartController extends BaseController {
     public R<Boolean> deleteCartCheckedList(@PathVariable("userId") Long userId){
         return R.ok(cartService.deleteCartCheckedList(userId));
     }
+
 }
