@@ -15,7 +15,6 @@ import com.spzx.order.api.domain.OrderInfo;
 import com.spzx.order.domain.OrderForm;
 import com.spzx.order.service.IOrderInfoService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -143,18 +142,10 @@ public class OrderInfoController extends BaseController
 
     @Operation(summary = "获取用户订单分页列表")
     @GetMapping("/userOrderInfoList/{pageNum}/{pageSize}")
-    public TableDataInfo list(
-            @Parameter(name = "pageNum", description = "当前页码", required = true)
-            @PathVariable Integer pageNum,
-
-            @Parameter(name = "pageSize", description = "每页记录数", required = true)
-            @PathVariable Integer pageSize,
-
-            @Parameter(name = "orderStatus", description = "订单状态", required = false)
-            @RequestParam(required = false, defaultValue = "") Integer orderStatus) {
-        PageHelper.startPage(pageNum, pageSize);
-        List<OrderInfo> list = orderInfoService.selectUserOrderInfoList(orderStatus);
-        return getDataTable(list);
+    public TableDataInfo list(@PathVariable Integer pageNum, @PathVariable Integer pageSize,Integer orderStatus){
+        PageHelper.startPage(pageNum,pageSize);
+        List<OrderInfo> userOrderInfoList = orderInfoService.selectUserOrderInfoList(orderStatus);
+        return getDataTable(userOrderInfoList);
     }
 
     @Operation(summary = "取消订单")

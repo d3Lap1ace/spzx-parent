@@ -85,6 +85,7 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
 
     /**
      * 订单结算
+     *
      * @return
      */
     @Override
@@ -130,7 +131,6 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
 //                .stream().forEach(orderItem -> {
 //                    totalAmount.add(orderItem.getSkuPrice().multiply(new BigDecimal(orderItem.getSkuNum())));
 //                });
-
 
 
         //渲染订单确认页面-生成用户流水号
@@ -260,40 +260,36 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
 
     @Override
     public List<OrderInfo> selectUserOrderInfoList(Integer orderStatus) {
-        // 获取当前登录用户的id
+        // 获取当前用户id
         Long userId = SecurityContextHolder.getUserId();
-        // 根据订单状态条件值是否为空, 如果为空查询全部
-        LambdaQueryWrapper<OrderInfo> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(OrderInfo::getUserId, userId);
+        // 查询我的订单
+        LambdaQueryWrapper<OrderInfo> orderInfoLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        orderInfoLambdaQueryWrapper.eq(OrderInfo::getUserId, userId);
+        // 如果有状态 加上状态 没有就查询全部
         if (orderStatus != null) {
-            wrapper.eq(OrderInfo::getOrderStatus, orderStatus);
+            orderInfoLambdaQueryWrapper.eq(OrderInfo::getOrderStatus, orderStatus);
         }
-        List<OrderInfo> orderInfoList = baseMapper.selectList(wrapper);
-
-        // 把每个订单里面所有订单项查询,进行封装
-        if(!CollectionUtils.isEmpty(orderInfoList)) {
-            //1 从orderInfoList获取所有订单id值，返回所有订单id集合
-            List<Long> orderIdList =
-                    orderInfoList.stream().map(OrderInfo::getId).collect(Collectors.toList());
-
-            //2 根据所有订单id集合，查询对应订单项数据
-            LambdaQueryWrapper<OrderItem> wrapperOrderItem = new LambdaQueryWrapper<>();
-            wrapperOrderItem.in(OrderItem::getOrderId,orderIdList);
-            List<OrderItem> orderItemList = orderItemMapper.selectList(wrapperOrderItem);
-
-            //3 对查询所有订单项orderItemList分组处理
-            //分组之后map集合  key：分组字段 orderId  value：orderId对应订单项集合
-            Map<Long, List<OrderItem>> map =
-                    orderItemList.stream().collect(Collectors.groupingBy(OrderItem::getOrderId));
-
-            //4 把OrderInfo和OrderItem关联起来
-            orderInfoList.forEach(orderInfo -> {
-                List<OrderItem> orderItems = map.get(orderInfo.getId());
-                orderInfo.setOrderItemList(orderItems);
-            });
-        }
-
-        return orderInfoList;
+        // 查询订单id列表
+        List<OrderInfo> orderUserInfoList = baseMapper.selectList(orderInfoLambdaQueryWrapper);
+        // 优雅
+        Optional.ofNullable(orderUserInfoList)
+                .ifPresent(orderInfoList -> {
+                    orderInfoList
+                            .forEach(orderInfo -> {
+                                orderInfo
+                                        .setOrderItemList(orderItemMapper
+                                                .selectList(new LambdaQueryWrapper<OrderItem>()
+                                                        .in(OrderItem::getOrderId, orderInfoList
+                                                                .stream()
+                                                                .map(OrderInfo::getId)
+                                                                .collect(Collectors.toList())))
+                                                .stream()
+                                                .collect(Collectors.groupingBy(OrderItem::getOrderId))
+                                                .get(orderInfo.getId())
+                                        );
+                            });
+                });
+        return orderUserInfoList;
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -341,6 +337,7 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
 
     /**
      * 根据订单号获取订单信息
+     *
      * @param orderNo
      * @return
      */
@@ -361,8 +358,6 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         orderInfo.setOrderItemList(orderItemList);
         return orderInfo;
     }
-
-
 
 
     @Transactional(rollbackFor = Exception.class)
@@ -387,7 +382,7 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
 
         List<OrderItem> orderItemList = orderForm.getOrderItemList();
         BigDecimal totalAmount = new BigDecimal(0);
-        for (OrderItem orderItem:orderItemList) {
+        for (OrderItem orderItem : orderItemList) {
             BigDecimal skuPrice = orderItem.getSkuPrice();
             Integer skuNum = orderItem.getSkuNum();
             totalAmount = totalAmount.add(skuPrice.multiply(new BigDecimal(skuNum)));
