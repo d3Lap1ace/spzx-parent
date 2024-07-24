@@ -23,6 +23,7 @@ import com.spzx.order.service.IOrderInfoService;
 import com.spzx.product.api.RemoteProductService;
 import com.spzx.product.api.domain.ProductSku;
 import com.spzx.product.api.domain.SkuPrice;
+import com.spzx.product.api.domain.vo.SkuLockVo;
 import com.spzx.user.api.RemoteUserAddressService;
 import com.spzx.user.api.domain.UserAddress;
 import jakarta.annotation.Resource;
@@ -92,53 +93,35 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
     public TradeVo orderTradeData() {
         // 获取当前登录用户的id
         Long userId = SecurityContextHolder.getUserId();
-        R<List<CartInfo>> cartInfoListResult = remoteCartService.getCartCheckedList(userId, SecurityConstants.INNER);
-        if (R.FAIL == cartInfoListResult.getCode()) {
-            throw new ServiceException(cartInfoListResult.getMsg());
+        // 获得当前用户购物车选中列表
+        R<List<CartInfo>> cartCheckedListR = remoteCartService.getCartCheckedList(userId, SecurityConstants.INNER);
+        if(R.FAIL == cartCheckedListR.getCode()){
+            throw new ServiceException(cartCheckedListR.getMsg());
         }
-        List<CartInfo> cartInfoList = cartInfoListResult.getData();
-        if (CollectionUtils.isEmpty(cartInfoList)) {
+        List<CartInfo> cartCheckedList = cartCheckedListR.getData();
+        if(CollectionUtils.isEmpty(cartCheckedList)){
             throw new ServiceException("购物车无选中商品");
         }
-
-
         //将集合泛型从购物车改为订单明细
+        BigDecimal totalPrice = new BigDecimal(0);
         List<OrderItem> orderItemList = null;
-        BigDecimal totalAmount = new BigDecimal(0);
-        if (!CollectionUtils.isEmpty(cartInfoList)) {
-            orderItemList = cartInfoList.stream().map(cartInfo -> {
+        if(!CollectionUtils.isEmpty(cartCheckedList)){
+            orderItemList = cartCheckedList.stream().map(cartInfo -> {
                 OrderItem orderItem = new OrderItem();
-                BeanUtils.copyProperties(cartInfo, orderItem);
+                BeanUtils.copyProperties(cartInfo, orderItem, OrderItem.class);
                 orderItem.setSkuPrice(cartInfo.getSkuPrice());
                 return orderItem;
             }).collect(Collectors.toList());
             //订单总金额
-            for (OrderItem orderItem : orderItemList) {
-                totalAmount = totalAmount.add(orderItem.getSkuPrice().multiply(new BigDecimal(orderItem.getSkuNum())));
+            for(OrderItem orderItem : orderItemList){
+                totalPrice = totalPrice.add(orderItem.getSkuPrice().multiply(new BigDecimal(orderItem.getSkuNum())));
             }
         }
-
-//        BigDecimal totalAmount = new BigDecimal(0);
-//        List<OrderItem> orderItemList = Optional.of(cartInfoList)
-//                .orElseGet(ArrayList::new)
-//                .stream()
-//                .map(cartInfo -> {
-//                    OrderItem orderItem = new OrderItem();
-//                    BeanUtils.copyProperties(cartInfo, orderItem, OrderItem.class);
-//                    orderItem.setSkuPrice(cartInfo.getSkuPrice());
-//                    return orderItem;
-//                }).collect(Collectors.toList());
-//                .stream().forEach(orderItem -> {
-//                    totalAmount.add(orderItem.getSkuPrice().multiply(new BigDecimal(orderItem.getSkuNum())));
-//                });
-
-
         //渲染订单确认页面-生成用户流水号
-        String tradeNo = this.generateTradeNo(userId);
         TradeVo tradeVo = new TradeVo();
-        tradeVo.setTradeNo(tradeNo);
-        tradeVo.setTotalAmount(totalAmount);
+        tradeVo.setTradeNo(this.generateTradeNo(userId));
         tradeVo.setOrderItemList(orderItemList);
+        tradeVo.setTotalAmount(totalPrice);
         return tradeVo;
     }
 
@@ -202,13 +185,30 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
 
         try {
             // 4 校验库存并锁定库存
+            // List<OrderItem> -- List<SkuLockVo>
+            List<SkuLockVo> skuLockVoList = orderItemList.stream().map(orderItem -> {
+                SkuLockVo skuLockVo = new SkuLockVo();
+                skuLockVo.setSkuId(orderItem.getSkuId());
+                skuLockVo.setSkuNum(orderItem.getSkuNum());
+                return skuLockVo;
+            }).collect(Collectors.toList());
+            //远程调用，根据List<SkuLockVo>检验库存量
+            R<String> stringR = remoteProductService.checkAndLock(orderForm.getTradeNo(),
+                    skuLockVoList, SecurityConstants.INNER);
+            String data = stringR.getData();
+            if(StringUtils.hasText(data)) {
+                throw new ServiceException(data);
+            }
+
+
+            // 5 生成订单（订单表添加数据order_info  和  order_item）
             Long orderId = this.saveOrder(orderForm);
 
 
-            //5 删除购物车选中商品
+            // 6 删除购物车选中商品
             remoteCartService.deleteCartCheckedList(userId, SecurityConstants.INNER);
 
-            //6 发送延迟消息，实现30分钟没有支付订单，订单关闭
+            // 7 发送延迟消息，实现30分钟没有支付订单，订单关闭
             this.sendDelayMessage(orderId);
 
             return orderId;
@@ -365,7 +365,7 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         // 获取当前登录用户的id
         Long userId = SecurityContextHolder.getUserId();
         String userName = SecurityContextHolder.getUserName();
-
+        //设置orderInfo数据
         OrderInfo orderInfo = new OrderInfo();
         orderInfo.setOrderNo(orderForm.getTradeNo());
         orderInfo.setUserId(userId);
@@ -387,18 +387,20 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
             Integer skuNum = orderItem.getSkuNum();
             totalAmount = totalAmount.add(skuPrice.multiply(new BigDecimal(skuNum)));
         }
-
+        //计算总价格
         orderInfo.setTotalAmount(totalAmount);
         orderInfo.setCouponAmount(new BigDecimal(0));
         orderInfo.setOriginalTotalAmount(totalAmount);
         orderInfo.setFeightFee(orderForm.getFeightFee());
+        //OrderInfo类的orderStatus属性的类型改为Integer
         orderInfo.setOrderStatus(0);
         orderInfo.setCreateBy(userName);
         orderInfo.setCreateTime(new Date());
 
         orderInfoMapper.insert(orderInfo);
-
+        //添加数据到order_item
         for (OrderItem orderItem : orderItemList) {
+            //设置订单id
             orderItem.setOrderId(orderInfo.getId());
             orderItemMapper.insert(orderItem);
         }
@@ -410,16 +412,14 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
 
     private String generateTradeNo(Long userId) {
         //1.构建流水号Key
-        String userTradeKey = "user:tradeNo:" + userId;
+        String userTradeKey = "user:trade:" + userId;
 
         //2.构建流水号value
-        String tradeNo = UUID.randomUUID().toString().replaceAll("-", "");
+        String uuid = UUID.randomUUID().toString().replaceAll("-", "");
 
         //3.将流水号存入Redis 暂存5分钟
-        redisTemplate.opsForValue().set(userTradeKey, tradeNo, 5, TimeUnit.MINUTES);
-
-        return tradeNo;
-
+        redisTemplate.opsForValue().set(userTradeKey, uuid,5,TimeUnit.MINUTES);
+        return uuid;
     }
 
 }
