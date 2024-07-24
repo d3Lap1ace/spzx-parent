@@ -28,4 +28,6 @@ public interface ICartService {
     Boolean updateCartPrice(Long userId);
 
     Boolean deleteCartCheckedList(Long userId);
+
+    void deleteCart(Long skuId);
 }

@@ -35,17 +35,27 @@ public class CartController extends BaseController {
     private ICartService cartService;
 
     @Operation(summary = "添加购物车")
-    @RequiresLogin  // 验证登录
+    @RequiresLogin
     @GetMapping("addToCart/{skuId}/{skuNum}")
     public AjaxResult addToCart(@PathVariable Long skuId, @PathVariable Integer skuNum) {
         cartService.addToCart(skuId,skuNum);
-        return success();
+        return AjaxResult.success();
     }
+
     @Operation(summary = "查询购物车")
     @RequiresLogin
     @GetMapping("cartList")
     public AjaxResult cartList() {
         return success(cartService.getCartList());
+    }
+    @Operation(summary = "删除购物车选中的商品")
+    @RequiresLogin
+    @GetMapping("deleteCart/{skuId}")
+    public AjaxResult deleteCart(@Parameter(name = "skuid",description = "商品skuId",required = true)
+                                     @PathVariable Long skuId) {
+        cartService.deleteCart(skuId);
+        return success();
+
     }
 
     @Operation(summary="更新选中状态")

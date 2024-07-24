@@ -15,7 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.BoundHashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -54,97 +53,100 @@ public class CartServiceImpl implements ICartService {
         log.info("Add to cart");
         // 获取当前登录用户的id
         Long userId = SecurityContextHolder.getUserId();
-
-        //1.构建“用户”购物车hash结构key  user：用户ID：cart
+        String userName = SecurityContextHolder.getUserName();
+        //1.构建“用户”购物车hash结构key  user:cart+userId
         String cartKey = this.getCartKey(userId);
 
         //2.创建Hash结构绑定操作对象（方便对hash进行操作）
 //        BoundHashOperations<String, String, String> hashOps =redisTemplate.boundHashOps(cartKey);
-        BoundHashOperations<String, String, CartInfo> hashOps =redisTemplate.boundHashOps(cartKey);
+        BoundHashOperations<String,String,CartInfo> hashOps = redisTemplate.boundHashOps(cartKey);
 
         //4.判断用户购物车中是否包含该商品 如果包含：数量进行累加(某件商品数量上限99) 不包含：新增购物车商品
-        String hashKey = skuId.toString();
+        String hashkey = skuId.toString();
         Integer threshold = 99;
-        Boolean hasKey = hashOps.hasKey(hashKey);
-        if(hasKey) {
+        Boolean flag = hashOps.hasKey(hashkey);
+        if(flag) {
             //4.1 说明该商品在购物车中已有，对数量进行累加 ，不能超过指定上限99
 //            String str = hashOps.get(hashKey);
 //            CartInfo cartInfo = JSON.parseObject(str,CartInfo.class);
-            CartInfo cartInfo = hashOps.get(hashKey);
-            int totalCount = (cartInfo.getSkuNum() + skuNum);
-            cartInfo.setSkuNum(totalCount > threshold ? threshold : totalCount);
-
-
+            CartInfo cartInfo = hashOps.get(hashkey);
+            cartInfo.setSkuNum(skuNum > threshold ? threshold : skuNum);
+            hashOps.put(hashkey, cartInfo);
 //            hashOps.put(hashKey, JSON.toJSONString(cartInfo));
-            hashOps.put(hashKey, cartInfo);
         }else {
             //4.2.判断购物车商品种类（不同SKU）总数大于50件
             Long count = hashOps.size();
-            if (++count > 50) {
+            if(++count>50){
                 throw new RuntimeException("商品种类数量超过上限！");
             }
             //4.3. 说明购物车没有该商品，构建购物车对象，存入Redis
             CartInfo cartInfo = new CartInfo();
-            cartInfo.setSkuId(userId);
-            cartInfo.setSkuNum(skuNum > threshold ? threshold : skuNum);
-            cartInfo.setCreateTime(new Date());
-            //4.3.1 远程调用商品服务获取商品sku基本信息
-            R<ProductSku> productSkuResult = remoteProductService.getProductSku(skuId, SecurityConstants.INNER);
-            if(R.FAIL == productSkuResult.getCode()) {
-                throw new ServiceException(productSkuResult.getMsg());
-            }
-            ProductSku productSku = productSkuResult.getData();
+            cartInfo.setUserId(userId);
             cartInfo.setSkuId(skuId);
+            cartInfo.setSkuNum(skuNum);
+            cartInfo.setCreateTime(new Date());
+            cartInfo.setCreateBy(userName);
+            cartInfo.setUpdateTime(new Date());
+            cartInfo.setUpdateBy(userName);
+            //4.3.1 远程调用商品服务获取商品sku基本信息
+            R<ProductSku> productSkuR = remoteProductService.getProductSku(skuId, SecurityConstants.INNER);
+            if(R.FAIL == productSkuR.getCode()) {
+                throw new ServiceException(productSkuR.getMsg());
+            }
+            ProductSku productSku = productSkuR.getData();
             cartInfo.setSkuName(productSku.getSkuName());
             cartInfo.setThumbImg(productSku.getThumbImg());
-
             //4.2 远程调用商品服务获取商品实时价格
-            R<SkuPrice> skuPriceResult = remoteProductService.getSkuPrice(skuId, SecurityConstants.INNER);
-            if (R.FAIL == skuPriceResult.getCode()) {
-                throw new ServiceException(skuPriceResult.getMsg());
+            R<SkuPrice> skuPriceR = remoteProductService.getSkuPrice(skuId, SecurityConstants.INNER);
+            if(R.FAIL == skuPriceR.getCode()) {
+                throw new ServiceException(skuPriceR.getMsg());
             }
-            SkuPrice skuPrice = skuPriceResult.getData();
+            SkuPrice skuPrice = skuPriceR.getData();
             cartInfo.setCartPrice(skuPrice.getSalePrice());
             cartInfo.setSkuPrice(skuPrice.getSalePrice());
-
             //4.3 将购物车商品存入Redis
+            hashOps.put(hashkey, cartInfo);
 //            hashOps.put(hashKey, JSON.toJSONString(cartInfo));
-            hashOps.put(hashKey,cartInfo);
         }
-
-
     }
 
     @Override
     public List<CartInfo> getCartList() {
         // 获取当前用户id
         Long userId = SecurityContextHolder.getUserId();
-        // 获取当前购物车key
+        // 从redis中获取用户hash  生成key
         String cartKey = this.getCartKey(userId);
-        // 获取购物车信息
-//        BoundHashOperations<String,String,CartInfo> hashOperations = redisTemplate.boundHashOps(cartKey);
-//        List<CartInfo> cartInfoList = hashOperations.values();
+        // 根据key获取购物车value值
         List<CartInfo> cartInfoList = redisTemplate.opsForHash().values(cartKey);
-        if(!CollectionUtils.isEmpty(cartInfoList)) {
-            List<CartInfo> infoList = cartInfoList.stream()
-                    .sorted((o1, o2) -> o2.getCreateTime().compareTo(o1.getCreateTime()))
-                    .collect(Collectors.toList());
+        // 处理集合数据
+        Optional.of(cartInfoList)
+                .ifPresent(cartInfoListNotNull->{
+                    // 按添加时间顺序排队
+                    List<CartInfo> infoList = cartInfoListNotNull
+                            .stream()
+                            .sorted(((o1, o2) -> o2.getCreateTime().compareTo(o1.getCreateTime())))
+                            .collect(Collectors.toList());
+                    // infoList获取购物车里面所有skuId
+                    List<Long> skuIdList = infoList.stream().map(CartInfo::getSkuId).collect(Collectors.toList());
 
-            // skuId列表
-            List<Long> skuIdList = infoList.stream().map(CartInfo::getSkuId).collect(Collectors.toList());
-            // 查询商品的事实价格
-            R<List<SkuPrice>> skuPriceListResult = remoteProductService.getSkuPriceList(skuIdList, SecurityConstants.INNER);
-            if(R.FAIL == skuPriceListResult.getCode()) {
-                throw new ServiceException(skuPriceListResult.getMsg());
-            }
-            Map<Long, BigDecimal> skuIdToPriceMap = skuPriceListResult.getData().stream()
-                    .collect(Collectors.toMap(SkuPrice::getSkuId, SkuPrice::getSalePrice));
-            infoList.forEach(it->{
-                it.setSkuPrice(skuIdToPriceMap.get(it.getSkuId()));
-            });
-            return infoList;
-        }
-        return new ArrayList<>();
+                    //根据所有skuid列表远程调用，对应sku价格数据
+                    R<List<SkuPrice>> skuPriceListR = remoteProductService.getSkuPriceList(skuIdList, SecurityConstants.INNER);
+                    if(R.FAIL == skuPriceListR.getCode()) {
+                        throw new ServiceException(skuPriceListR.getMsg());
+                    }
+                    List<SkuPrice> skuPriceList = skuPriceListR.getData();
+
+                    //skuPriceList 转换map集合  key：skuId   value：价格
+                    Map<Long, BigDecimal> map = skuPriceList.stream().collect(Collectors.toMap(SkuPrice::getSkuId, SkuPrice::getSalePrice));
+
+                    //infoList购物车所有商品价格更新最新价格
+                    infoList.forEach(cartInfo -> {
+                        Long skuId = cartInfo.getSkuId();
+                        BigDecimal price = map.get(skuId);
+                        cartInfo.setSkuPrice(price);
+                    });
+                });
+        return cartInfoList;
     }
 
     @Override
@@ -255,5 +257,13 @@ public class CartServiceImpl implements ICartService {
                     }
                 });
         return true;
+    }
+
+    @Override
+    public void deleteCart(Long skuId) {
+        Long userId = SecurityContextHolder.getUserId();
+        String cartKey = this.getCartKey(userId);
+        BoundHashOperations<String,String,CartInfo> boundHashOperations = redisTemplate.boundHashOps(cartKey);
+        boundHashOperations.delete(skuId.toString());
     }
 }
