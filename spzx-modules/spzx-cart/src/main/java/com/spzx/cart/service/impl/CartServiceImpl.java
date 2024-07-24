@@ -44,7 +44,11 @@ public class CartServiceImpl implements ICartService {
     }
 
 
-
+    /**
+     * 添加购物车
+     * @param skuId
+     * @param skuNum
+     */
     @Override
     public void addToCart(Long skuId, Integer skuNum) {
         log.info("Add to cart");
@@ -187,6 +191,11 @@ public class CartServiceImpl implements ICartService {
         redisTemplate.delete(cartKey);
     }
 
+    /**
+     * 查询用户购物车列表中选中商品列表
+     * @param userId
+     * @return
+     */
     @Override
     public List<CartInfo> getCartCheckedList(Long userId) {
         List<CartInfo> cartInfoList = new ArrayList<>();
@@ -207,17 +216,27 @@ public class CartServiceImpl implements ICartService {
         BoundHashOperations<String,String,CartInfo> hashOperations = redisTemplate.boundHashOps(cartKey);
         List<CartInfo> cartCachInfoList = hashOperations.values(); // 获取redis里面 当前用户购物车的物品
 
-        Optional.ofNullable(cartCachInfoList)
-                .orElseGet(ArrayList::new)
-                .stream()
-                .forEach(cartInfo -> {
-                    if(cartInfo.getIsChecked().intValue()==1){
-                        SkuPrice skuPrice = remoteProductService.getSkuPrice(cartInfo.getSkuId(), SecurityConstants.INNER).getData();
-                        cartInfo.setCartPrice(skuPrice.getSalePrice());
-                        cartInfo.setSkuPrice(skuPrice.getSalePrice());
-                        hashOperations.put(cartInfo.getSkuId().toString(), cartInfo);
-                    }
-                });
+//        Optional.ofNullable(cartCachInfoList)
+//                .ifPresent(cartInfoList -> {cartInfoList
+//                            .stream()
+//                            .filter(cartInfo -> cartInfo.getIsChecked().intValue()==1)
+//                            .forEach(cartInfo -> {
+//                                SkuPrice skuPrice = remoteProductService.getSkuPrice(cartInfo.getSkuId(), SecurityConstants.INNER).getData();
+//                                cartInfo.setCartPrice(skuPrice.getSalePrice());
+//                                cartInfo.setSkuPrice(skuPrice.getSalePrice());
+//                                hashOperations.put(cartInfo.getSkuId().toString(), cartInfo);
+//                            });
+//                });
+        if (!CollectionUtils.isEmpty(cartCachInfoList)) {
+            for (CartInfo cartInfo : cartCachInfoList) {
+                if (cartInfo.getIsChecked().intValue() == 1) {
+                    SkuPrice skuPrice = remoteProductService.getSkuPrice(cartInfo.getSkuId(), SecurityConstants.INNER).getData();
+                    cartInfo.setCartPrice(skuPrice.getSalePrice());
+                    cartInfo.setSkuPrice(skuPrice.getSalePrice());
+                    hashOperations.put(cartInfo.getSkuId().toString(), cartInfo);
+                }
+            }
+        }
 
         return true;
     }

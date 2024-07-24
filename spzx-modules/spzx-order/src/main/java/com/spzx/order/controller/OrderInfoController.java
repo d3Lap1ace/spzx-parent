@@ -137,7 +137,7 @@ public class OrderInfoController extends BaseController
     @RequiresLogin
     @GetMapping("getOrderInfo/{orderId}")
     public AjaxResult getOrderInfo(@PathVariable Long orderId) {
-        OrderInfo orderInfo = orderInfoService.getById(orderId);
+        OrderInfo orderInfo = orderInfoService.getOrderInfo(orderId);
         return success(orderInfo);
     }
 
@@ -169,8 +169,10 @@ public class OrderInfoController extends BaseController
     @InnerAuth
     @GetMapping("getByOrderNo/{orderNo}")
     public R<OrderInfo> getByOrderNo(@PathVariable String orderNo) {
-        OrderInfo orderInfo = orderInfoService.getByOrderNo(orderNo);
+        OrderInfo orderInfo = orderInfoService.getById(orderNo);
         return R.ok(orderInfo);
     }
+
+
 
 }

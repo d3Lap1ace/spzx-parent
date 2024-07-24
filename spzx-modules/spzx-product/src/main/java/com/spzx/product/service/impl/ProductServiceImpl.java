@@ -175,7 +175,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
                 .select(ProductSku::getId));
         List<Long> skuIdList = productSkuList.stream().map(ProductSku::getId).collect(Collectors.toList());
         productSkuMapper.delete(new LambdaQueryWrapper<ProductSku>().in(ProductSku::getProductId, Arrays.asList(ids)));
-        skuStockMapper.delete(new LambdaQueryWrapper<SkuStock>().in(SkuStock::getSkuId, Arrays.asList(skuIdList)));
+        skuStockMapper.delete(new LambdaQueryWrapper<SkuStock>().in(SkuStock::getSkuId, skuIdList));
         productDetailsMapper.delete(new LambdaQueryWrapper<ProductDetails>().in(ProductDetails::getProductId, Arrays.asList(ids)));
         return 1;
 

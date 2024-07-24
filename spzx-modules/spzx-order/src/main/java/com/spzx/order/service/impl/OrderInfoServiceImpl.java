@@ -83,6 +83,10 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         return orderInfoMapper.selectOrderInfoList(orderInfo);
     }
 
+    /**
+     * 订单结算
+     * @return
+     */
     @Override
     public TradeVo orderTradeData() {
         // 获取当前登录用户的id
@@ -98,24 +102,36 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
 
 
         //将集合泛型从购物车改为订单明细
+        List<OrderItem> orderItemList = null;
         BigDecimal totalAmount = new BigDecimal(0);
-        List<OrderItem> orderItemList = Optional.ofNullable(cartInfoList)
-                .orElseGet(ArrayList::new)
-                .stream()
-                .map(cartInfo -> {
-                    OrderItem orderItem = new OrderItem();
-                    BeanUtils.copyProperties(cartInfo, orderItem, OrderItem.class);
-                    orderItem.setSkuPrice(cartInfo.getSkuPrice());
-                    return orderItem;
-                }).collect(Collectors.toList());
+        if (!CollectionUtils.isEmpty(cartInfoList)) {
+            orderItemList = cartInfoList.stream().map(cartInfo -> {
+                OrderItem orderItem = new OrderItem();
+                BeanUtils.copyProperties(cartInfo, orderItem);
+                orderItem.setSkuPrice(cartInfo.getSkuPrice());
+                return orderItem;
+            }).collect(Collectors.toList());
+            //订单总金额
+            for (OrderItem orderItem : orderItemList) {
+                totalAmount = totalAmount.add(orderItem.getSkuPrice().multiply(new BigDecimal(orderItem.getSkuNum())));
+            }
+        }
+
+//        BigDecimal totalAmount = new BigDecimal(0);
+//        List<OrderItem> orderItemList = Optional.of(cartInfoList)
+//                .orElseGet(ArrayList::new)
+//                .stream()
+//                .map(cartInfo -> {
+//                    OrderItem orderItem = new OrderItem();
+//                    BeanUtils.copyProperties(cartInfo, orderItem, OrderItem.class);
+//                    orderItem.setSkuPrice(cartInfo.getSkuPrice());
+//                    return orderItem;
+//                }).collect(Collectors.toList());
 //                .stream().forEach(orderItem -> {
 //                    totalAmount.add(orderItem.getSkuPrice().multiply(new BigDecimal(orderItem.getSkuNum())));
 //                });
-        //订单总金额
-        //订单总金额
-        for (OrderItem orderItem : orderItemList) {
-            totalAmount = totalAmount.add(orderItem.getSkuPrice().multiply(new BigDecimal(orderItem.getSkuNum())));
-        }
+
+
 
         //渲染订单确认页面-生成用户流水号
         String tradeNo = this.generateTradeNo(userId);
@@ -255,18 +271,27 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         List<OrderInfo> orderInfoList = baseMapper.selectList(wrapper);
 
         // 把每个订单里面所有订单项查询,进行封装
-        List<Long> orderIdList = Optional.ofNullable(orderInfoList)
-                .orElseThrow()
-                .stream()
-                .map(OrderInfo::getId)
-                .collect(Collectors.toList());
-        Map<Long, List<OrderItem>> orderIdToOrderItemListMap = orderItemMapper.selectList(new LambdaQueryWrapper<OrderItem>()
-                        .in(OrderItem::getOrderId, orderIdList))
-                .stream()
-                .collect(Collectors.groupingBy(OrderItem::getOrderId));
-        orderInfoList.forEach(it -> {
-            it.setOrderItemList(orderIdToOrderItemListMap.get(it.getId()));
-        });
+        if(!CollectionUtils.isEmpty(orderInfoList)) {
+            //1 从orderInfoList获取所有订单id值，返回所有订单id集合
+            List<Long> orderIdList =
+                    orderInfoList.stream().map(OrderInfo::getId).collect(Collectors.toList());
+
+            //2 根据所有订单id集合，查询对应订单项数据
+            LambdaQueryWrapper<OrderItem> wrapperOrderItem = new LambdaQueryWrapper<>();
+            wrapperOrderItem.in(OrderItem::getOrderId,orderIdList);
+            List<OrderItem> orderItemList = orderItemMapper.selectList(wrapperOrderItem);
+
+            //3 对查询所有订单项orderItemList分组处理
+            //分组之后map集合  key：分组字段 orderId  value：orderId对应订单项集合
+            Map<Long, List<OrderItem>> map =
+                    orderItemList.stream().collect(Collectors.groupingBy(OrderItem::getOrderId));
+
+            //4 把OrderInfo和OrderItem关联起来
+            orderInfoList.forEach(orderInfo -> {
+                List<OrderItem> orderItems = map.get(orderInfo.getId());
+                orderInfo.setOrderItemList(orderItems);
+            });
+        }
 
         return orderInfoList;
     }
@@ -327,6 +352,17 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         return orderInfo;
     }
 
+    @Override
+    public OrderInfo getOrderInfo(Long orderId) {
+        OrderInfo orderInfo = baseMapper.selectById(orderId);
+
+        List<OrderItem> orderItemList = orderItemMapper
+                .selectList(new LambdaQueryWrapper<OrderItem>().eq(OrderItem::getOrderId, orderId));
+        orderInfo.setOrderItemList(orderItemList);
+        return orderInfo;
+    }
+
+
 
 
     @Transactional(rollbackFor = Exception.class)
@@ -351,9 +387,11 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
 
         List<OrderItem> orderItemList = orderForm.getOrderItemList();
         BigDecimal totalAmount = new BigDecimal(0);
-        orderItemList.forEach(orderItem -> {
-            totalAmount.add(orderItem.getSkuPrice()).multiply(new BigDecimal(orderItem.getSkuNum()));
-        });
+        for (OrderItem orderItem:orderItemList) {
+            BigDecimal skuPrice = orderItem.getSkuPrice();
+            Integer skuNum = orderItem.getSkuNum();
+            totalAmount = totalAmount.add(skuPrice.multiply(new BigDecimal(skuNum)));
+        }
 
         orderInfo.setTotalAmount(totalAmount);
         orderInfo.setCouponAmount(new BigDecimal(0));
